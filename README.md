@@ -17,6 +17,14 @@
 - 학습 데이터 구성(도시별 분포)과 실제 사진 샘플을 확인하는 셀 포함
 - **GPU 없어도 돌아간다** (CPU로 8초)
 
+### 보간법 기초 (셀 9개, 20초)
+
+<https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/01_interpolation_basics.ipynb>
+
+딥러닝 없이 Nearest / Bilinear / Bicubic / Lanczos 로 ×2·×3·×4 복원을 해보고,
+계단 현상·흐림·링잉이 각각 어디서 생기는지 확대해서 본다.
+**딥러닝 SR 과 비교할 baseline 수치**를 여기서 확보한다. GPU 불필요.
+
 ### 전체 실습 (셀 27개, 2~3분)
 
 <https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/01_edsr_x3.ipynb>
@@ -38,7 +46,9 @@ colab/
 │       ├── code/         돌아가는 데 필요한 코드 전부
 │       └── checkpoints/  미리 학습해둔 파일 (여기서 이어서 배운다)
 ├── notebooks/
-│   └── 01_edsr_x3.ipynb  모델과 같은 번호
+│   ├── 00_minimal.ipynb              가장 빠른 확인
+│   ├── 01_interpolation_basics.ipynb 보간법 baseline (모델 불필요)
+│   └── 01_edsr_x3.ipynb              모델과 같은 번호
 └── tools/
     └── check_pairs.py    사진 짝이 잘 맞는지 검사하는 도구
 ```
