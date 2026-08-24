@@ -1,0 +1,8 @@
+# EDSR이 PNG를 .pt로 캐싱하는 폴더. 데이터를 바꾸면 반드시 지워야 하므로 커밋하지 않는다
+dataset/**/bin/
+# 학습 산출물 (Colab에서는 Drive로 심볼릭 링크된다)
+models/*/code/experiment/
+results/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/

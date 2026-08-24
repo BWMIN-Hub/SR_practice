@@ -1,0 +1,12 @@
+AOI_Athens_2
+AOI_Athens_10
+AOI_Barcelona_2
+AOI_Barcelona_12
+AOI_Busan_7
+AOI_Munich_0
+AOI_Munich_11
+AOI_Munich_16
+AOI_Paris_1_2
+AOI_Paris_1_6
+AOI_Seoul_1
+AOI_Seoul_14
