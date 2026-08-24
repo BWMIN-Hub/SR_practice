@@ -108,7 +108,11 @@ def main():
     p.add_argument('--cpu', action='store_true')
     args = p.parse_args()
 
-    device = torch.device('cpu' if args.cpu else 'cuda')
+    # GPU 가 없으면 자동으로 CPU 로 (없는데 cuda 를 잡으면 그대로 죽는다)
+    use_gpu = (not args.cpu) and torch.cuda.is_available()
+    device = torch.device('cuda' if use_gpu else 'cpu')
+    if not use_gpu and not args.cpu:
+        print('[info] GPU 를 찾지 못해 CPU 로 실행합니다 (느립니다)')
     net = build_model(args, device)
     os.makedirs(args.output, exist_ok=True)
 

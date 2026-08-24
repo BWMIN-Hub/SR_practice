@@ -31,6 +31,7 @@ N_THREADS=${N_THREADS:-6}
 TEST_EVERY=${TEST_EVERY:-1000}
 PRINT_EVERY=${PRINT_EVERY:-200}
 RESET=${RESET:-1}
+CPU=${CPU:-0}                        # 1 이면 GPU 없이 CPU 로 학습
 PRETRAIN=${PRETRAIN:-}
 SAVE_RESULTS=${SAVE_RESULTS:-1}   # 1이면 매 epoch 검증 SR PNG 저장(용량 큼)
 
@@ -40,6 +41,7 @@ if [ -n "$PRETRAIN" ]; then
     echo "fine-tune from: $PRETRAIN"
 fi
 if [ "$SAVE_RESULTS" = "1" ]; then EXTRA="$EXTRA --save_results"; fi
+if [ "$CPU" = "1" ]; then EXTRA="$EXTRA --cpu"; fi
 if [ "$RESET" = "1" ]; then
     EXTRA="$EXTRA --reset"
 else
