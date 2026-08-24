@@ -5,16 +5,22 @@
 
 ## 바로 시작하기
 
-아래 링크를 누르면 Colab에서 열린다. 구글 계정만 있으면 어느 컴퓨터에서든 된다.
+노트북이 둘이다. **막히면 최소 실행부터 해보세요.**
+
+### 최소 실행 (셀 3개, 10초)
+
+<https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/00_minimal.ipynb>
+
+- 구글 드라이브 안 씀, `git clone` 안 함, `pip install` 안 함
+- 받는 것은 파일 2개(7 MB)뿐이고 모델 구조는 노트북 안에 적혀 있다
+- **GPU 없어도 돌아간다** (CPU로 8초)
+
+### 전체 실습 (셀 27개, 2~3분)
 
 <https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/01_edsr_x3.ipynb>
 
-열고 나서 할 일은 두 가지뿐이다.
-
-1. 위 메뉴에서 **런타임 → 런타임 유형 변경 → T4 GPU** 를 고르고 저장
-2. 셀을 위에서부터 차례로 실행
-
-첫 번째 셀이 이 저장소를 알아서 내려받는다. 따로 업로드할 것도, 설치할 것도 없다.
+학습 코드 실행, 지리정보 GeoTIFF 출력, 큰 사진 타일 처리까지 포함한다.
+**런타임 → 런타임 유형 변경 → T4 GPU** 를 먼저 켜세요.
 
 ## 폴더 구성
 
