@@ -8,6 +8,8 @@
 | [`01_interpolation_basics`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/01_interpolation_basics.ipynb) | 보간법 4종 ×2·×3·×4 baseline | 불필요 |
 | [`00_minimal`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/00_minimal.ipynb) | 학습된 EDSR 적용 | 선택 |
 | [`01_edsr_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/01_edsr_x3.ipynb) | 학습 루프 + 적용 | 권장 |
+| [`02_srgan_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/02_srgan_x3.ipynb) | SRGAN 적용 + 판별자 붕괴 | 선택 |
+| [`03_srgan_x2`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/03_srgan_x2.ipynb) | SRGAN ×2, 붕괴 전후 비교 | 선택 |
 
 전부 같은 순서다: **데이터 시각화 → (학습) → 적용 → 정량 평가 → 결과**.
 이론 설명은 노트북에 넣지 않는다.
