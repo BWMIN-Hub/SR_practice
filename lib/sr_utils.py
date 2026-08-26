@@ -1,0 +1,135 @@
+"""실습용 데이터 로드·시각화·평가 헬퍼. `from sr_utils import *` 로 쓴다."""
+import json
+import os
+import urllib.request
+
+import cv2
+import imageio.v2 as imageio
+import matplotlib.pyplot as plt
+import numpy as np
+from skimage.metrics import peak_signal_noise_ratio as _psnr
+from skimage.metrics import structural_similarity as _ssim
+
+BASE = 'https://raw.githubusercontent.com/BWMIN-Hub/SR_practice/main'
+API = 'https://api.github.com/repos/BWMIN-Hub/SR_practice/contents'
+
+# 각 split 의 대표 패치 (실습에서 이것 하나씩만 보여준다)
+REP = {
+    'training': 'AOI_Barcelona_10_y0128_x0128',
+    'validation': 'AOI_Paris_1_6_y0064_x0192',   # 파리
+}
+TEST = 'incheon_600.png'                          # 인천, 실제 촬영본
+SHAVE = 4                                         # 점수 잴 때 잘라낼 가장자리
+
+__all__ = ['BASE', 'REP', 'TEST', 'SHAVE', 'fetch', 'pair', 'load_test',
+           'list_split', 'show', 'zoom', 'score', 'compare', 'bicubic',
+           'np', 'plt', 'cv2', 'imageio', 'json', 'os', 'urllib']
+
+
+def fetch(url, path):
+    if not os.path.exists(path):
+        os.makedirs(os.path.dirname(path) or '.', exist_ok=True)
+        urllib.request.urlretrieve(url, path)
+    return path
+
+
+def pair(split, stem):
+    """(입력 LR, 정답 HR) 한 쌍."""
+    hr = imageio.imread(fetch(f'{BASE}/dataset/{split}/HR/{stem}.png', f'{split}/{stem}.png'))
+    lr = imageio.imread(fetch(f'{BASE}/dataset/{split}/LR_bicubic/X3/{stem}x3.png',
+                              f'{split}/{stem}_lr.png'))
+    return lr, hr
+
+
+def load_test():
+    """test 대표(인천) 입력. 정답은 없다."""
+    return imageio.imread(fetch(f'{BASE}/dataset/test/{TEST}', 'test.png'))
+
+
+def list_split(split):
+    with urllib.request.urlopen(f'{API}/dataset/{split}/HR') as r:
+        return sorted(x['name'][:-4] for x in json.load(r))
+
+
+def bicubic(lr, scale=3):
+    h, w = lr.shape[:2]
+    return cv2.resize(lr, (w * scale, h * scale), interpolation=cv2.INTER_CUBIC)
+
+
+def score(pred, gt):
+    """(PSNR, SSIM). 가장자리는 잘라내고 잰다."""
+    a, b = pred[SHAVE:-SHAVE, SHAVE:-SHAVE], gt[SHAVE:-SHAVE, SHAVE:-SHAVE]
+    return _psnr(b, a, data_range=255), _ssim(b, a, data_range=255, channel_axis=2)
+
+
+def show(items, title=''):
+    """items: [(이름, 입력, 정답 또는 None)] — 위에 입력, 아래에 정답."""
+    fig, ax = plt.subplots(2, len(items), figsize=(3.3 * len(items), 7.0), squeeze=False)
+    for c, (name, lo, hi) in enumerate(items):
+        ax[0, c].imshow(lo)
+        ax[0, c].set_title(f'{name}\ninput {lo.shape[0]}px', fontsize=9)
+        if hi is None:
+            ax[1, c].text(.5, .5, 'no target', ha='center', va='center', color='#888')
+            ax[1, c].set_facecolor('#f2f2f2')
+        else:
+            ax[1, c].imshow(hi)
+            ax[1, c].set_title(f'target {hi.shape[0]}px', fontsize=9)
+        for r in (0, 1):
+            ax[r, c].set_xticks([]); ax[r, c].set_yticks([])
+    if title:
+        fig.suptitle(title, fontsize=10)
+    plt.tight_layout(); plt.show()
+
+
+def zoom(panels, size=110, title=''):
+    """가장 복잡한 구역을 찾아 확대 비교. panels: [(이름, 이미지)]."""
+    ref = panels[-1][1]
+    e = cv2.Canny(cv2.cvtColor(ref, cv2.COLOR_RGB2GRAY), 50, 150)
+    best, bs = (0, 0), -1.0
+    for y in range(0, ref.shape[0] - size, size // 2):
+        for x in range(0, ref.shape[1] - size, size // 2):
+            v = float(e[y:y + size, x:x + size].mean())
+            if v > bs:
+                best, bs = (y, x), v
+    y, x = best
+    fig, ax = plt.subplots(1, len(panels), figsize=(2.9 * len(panels), 3.2), squeeze=False)
+    for a, (n, im) in zip(ax[0], panels):
+        a.imshow(im[y:y + size, x:x + size], interpolation='nearest')
+        a.set_title(n, fontsize=9); a.set_xticks([]); a.set_yticks([])
+    if title:
+        fig.suptitle(title, fontsize=10)
+    plt.tight_layout(); plt.show()
+
+
+def compare(upscale_fn, split='validation', plot=True, label='model'):
+    """검증셋 전체를 bicubic 과 비교해 표와 그래프를 낸다."""
+    rows = []
+    for stem in list_split(split):
+        lr, hr = pair(split, stem)
+        pb, sb = score(bicubic(lr), hr)
+        pm, sm = score(upscale_fn(lr), hr)
+        rows.append((stem.rsplit('_y', 1)[0].replace('AOI_', ''), pb, sb, pm, sm))
+
+    m = np.array([[r[1], r[2], r[3], r[4]] for r in rows]).mean(0)
+    print(f'{"":12s}{"PSNR":>10s}{"SSIM":>10s}')
+    print(f'{"Bicubic":12s}{m[0]:10.2f}{m[1]:10.4f}')
+    print(f'{label:12s}{m[2]:10.2f}{m[3]:10.4f}')
+    print(f'{"차이":12s}{m[2] - m[0]:+10.2f}{m[3] - m[1]:+10.4f}   ({len(rows)}장 평균)')
+    if not plot:
+        return rows
+
+    seen, labels = {}, []
+    for n, *_ in rows:
+        seen[n] = seen.get(n, 0) + 1
+        labels.append(n if sum(1 for r in rows if r[0] == n) == 1 else f'{n}-{seen[n]}')
+    idx, w = np.arange(len(rows)), 0.38
+    fig, ax = plt.subplots(1, 2, figsize=(13, 4))
+    for a, (j, k, name) in zip(ax, [(1, 3, 'PSNR (dB)'), (2, 4, 'SSIM')]):
+        b, e = [r[j] for r in rows], [r[k] for r in rows]
+        a.bar(idx - w / 2, b, w, label='Bicubic', color='#9aa5b1')
+        a.bar(idx + w / 2, e, w, label=label, color='#2f6f9f')
+        a.set_xticks(idx); a.set_xticklabels(labels, rotation=45, ha='right', fontsize=8)
+        a.set_title(name); a.set_ylim(min(b + e) * .97, max(b + e) * 1.02)
+        a.grid(axis='y', alpha=.3); a.legend(fontsize=8)
+    plt.tight_layout(); plt.show()
+    return rows
