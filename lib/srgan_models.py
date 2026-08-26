@@ -61,3 +61,26 @@ def load_srgan(weight, scale=3, device=None):
     net = Generator(scale).to(device)
     net.load_state_dict(torch.load(weight, map_location=device))
     return net.eval()
+
+
+class Discriminator(nn.Module):
+    """업스트림 그대로. 마지막에 전역 평균풀링을 거쳐 이미지당 값 하나를 낸다
+    (PatchGAN 이 아니다)."""
+
+    def __init__(self):
+        super().__init__()
+        def blk(i, o, stride=1, bn=True):
+            m = [nn.Conv2d(i, o, 3, stride=stride, padding=1)]
+            if bn:
+                m.append(nn.BatchNorm2d(o))
+            return m + [nn.LeakyReLU(0.2)]
+        self.net = nn.Sequential(
+            *blk(3, 64, bn=False), *blk(64, 64, 2),
+            *blk(64, 128), *blk(128, 128, 2),
+            *blk(128, 256), *blk(256, 256, 2),
+            *blk(256, 512), *blk(512, 512, 2),
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(512, 1024, 1), nn.LeakyReLU(0.2), nn.Conv2d(1024, 1, 1))
+
+    def forward(self, x):
+        return torch.sigmoid(self.net(x).view(x.size(0)))

@@ -22,7 +22,7 @@ TEST = 'incheon_600.png'                          # 인천, 실제 촬영본
 SHAVE = 4                                         # 점수 잴 때 잘라낼 가장자리
 
 __all__ = ['BASE', 'REP', 'TEST', 'SHAVE', 'fetch', 'pair', 'load_test',
-           'list_split', 'show', 'zoom', 'score', 'compare', 'bicubic',
+           'list_split', 'show', 'zoom', 'score', 'compare', 'bicubic', 'retarget',
            'np', 'plt', 'cv2', 'imageio', 'json', 'os', 'urllib']
 
 
@@ -101,12 +101,21 @@ def zoom(panels, size=110, title=''):
     plt.tight_layout(); plt.show()
 
 
-def compare(upscale_fn, split='validation', plot=True, label='model'):
+def retarget(hr, lr, scale):
+    """HR 을 LR x scale 크기로 줄인다. 입력 LR 은 절대 건드리지 않는다."""
+    if scale == 3:
+        return hr
+    h, w = lr.shape[:2]
+    return cv2.resize(hr, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+
+
+def compare(upscale_fn, split='validation', plot=True, label='model', scale=3):
     """검증셋 전체를 bicubic 과 비교해 표와 그래프를 낸다."""
     rows = []
     for stem in list_split(split):
         lr, hr = pair(split, stem)
-        pb, sb = score(bicubic(lr), hr)
+        hr = retarget(hr, lr, scale)
+        pb, sb = score(bicubic(lr, scale), hr)
         pm, sm = score(upscale_fn(lr), hr)
         rows.append((stem.rsplit('_y', 1)[0].replace('AOI_', ''), pb, sb, pm, sm))
 
