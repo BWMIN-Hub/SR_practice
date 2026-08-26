@@ -81,9 +81,14 @@ def show(items, title=''):
     plt.tight_layout(); plt.show()
 
 
-def zoom(panels, size=110, title=''):
-    """가장 복잡한 구역을 찾아 확대 비교. panels: [(이름, 이미지)]."""
-    ref = panels[-1][1]
+def zoom(panels, size=110, title='', ref=None):
+    """가장 복잡한 구역을 찾아 확대 비교. panels: [(이름, 이미지)].
+
+    ref 를 주면 그 이미지를 기준으로 위치를 고른다. 안 주면 마지막 패널이 기준이다.
+    모델 출력을 기준으로 삼으면 모델이 바뀔 때마다 보는 곳이 달라지므로,
+    여러 모델을 비교할 때는 장면 자체(bicubic 등)를 기준으로 넘기는 것이 좋다.
+    """
+    ref = panels[-1][1] if ref is None else ref
     e = cv2.Canny(cv2.cvtColor(ref, cv2.COLOR_RGB2GRAY), 50, 150)
     best, bs = (0, 0), -1.0
     for y in range(0, ref.shape[0] - size, size // 2):
