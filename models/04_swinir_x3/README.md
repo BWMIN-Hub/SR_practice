@@ -1,0 +1,55 @@
+# 04 · SwinIR ×3 (classical)
+
+[JingyunLiang/SwinIR](https://github.com/JingyunLiang/SwinIR) 을 우리 위성 데이터로 학습.
+신경망 정의는 업스트림 `models/network_swinir.py` 를 그대로 쓴다(`lib/swinir_arch.py`).
+
+**업스트림 저장소에는 학습 코드가 없다**(추론만). 저자는 KAIR 로 학습하라고 안내한다.
+그래서 `SwinIR/train_swinir.py` 를 새로 작성했다.
+
+| | |
+|---|---|
+| 구조 | Swin Transformer, classical SR 설정 (embed_dim 180, RSTB 6개, window 8) |
+| 손실 | **L1 하나** — 판별자 없음 |
+| 입력 | 데이터셋이 제공하는 Sentinel-2 LR (10 m) |
+| 목표 | IKONOS HR (3.3333 m), LR × 3 |
+| 학습 | IKONOS 804쌍, 100 epoch, batch 8, LR 패치 48, Adam 2e-4 (50·75·90% 지점 절반) |
+| 가중치 | `checkpoints/swinir_x3.pth` (epoch 100, 11.94M) |
+| 노트북 | [`../../notebooks/04_swinir_x3.ipynb`](../../notebooks/04_swinir_x3.ipynb) |
+
+## ×3 을 고칠 필요가 없었다
+
+SwinIR 의 `Upsample` 클래스가 `scale == 3` 을 따로 처리한다(2의 거듭제곱과 3 지원).
+SRGAN·ESRGAN 은 둘 다 ×2 블록을 log2 번 쌓는 구조라 ×3 에서 조용히 깨졌는데,
+여기서는 그대로 쓸 수 있다.
+
+`timm` 이 필요하다 (`pip install timm`).
+
+## 학습 경과
+
+| epoch | L1 | lr |
+|---|---|---|
+| 1 | 0.11379 | 2e-4 |
+| 50 | 0.07122 | 1e-4 |
+| 100 | **0.06529** | 2.5e-5 |
+
+L1 이 43% 줄었다. **판별자가 없어 붕괴가 없고**, 학습률이 절반씩 떨어질 때마다
+한 단계씩 내려가는 단조로운 곡선이다. 검증 10패치 기준 최고는 epoch 100 이라
+더 돌리면 조금 더 나올 여지가 있다.
+
+## 네 모델 비교 (검증 10패치 / 인천)
+
+| 모델 | PSNR | SSIM | 인천 선명도 | 파라미터 |
+|---|---|---|---|---|
+| Bicubic | 18.15 | 0.4805 | 9.83 | — |
+| EDSR | 18.97 | 0.5462 | 14.60 | 1.55M |
+| SRGAN | 18.30 | 0.5187 | 22.03 | 0.77M |
+| ESRGAN | 16.55 | 0.4208 | **41.59** | 5.91M |
+| **SwinIR** | **19.04** | **0.5483** | 13.88 | 11.94M |
+
+PSNR·SSIM 1위지만 선명도는 최하위다. **지표와 체감 화질이 반대로 줄 선다.**
+L1 만 쓰면 불확실한 고주파를 만드는 것보다 평균으로 뭉개는 쪽이 손실이 작기 때문이다.
+
+EDSR 보다 파라미터가 7.7배인데 PSNR 이득은 0.07 dB 다. 학습(합성 LR)과
+검증(실제 Sentinel-2)의 도메인 차이가 병목이라 모델 용량으로는 넘지 못한다.
+
+`statistics/train_results.csv` 에 epoch 별 L1·PSNR·학습률 100행.

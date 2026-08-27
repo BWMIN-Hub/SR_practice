@@ -10,6 +10,7 @@
 | [`01_edsr_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/01_edsr_x3.ipynb) | 학습 루프 + 적용 | 권장 |
 | [`02_srgan_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/02_srgan_x3.ipynb) | SRGAN — 판별자 붕괴 | 선택 |
 | [`03_esrgan_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/03_esrgan_x3.ipynb) | ESRGAN — RRDB + RaGAN | 선택 |
+| [`04_swinir_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/04_swinir_x3.ipynb) | SwinIR — Transformer, GAN 없음 | 선택 |
 
 전부 같은 순서다: **데이터 시각화 → (학습) → 적용 → 정량 평가 → 결과**.
 이론 설명은 노트북에 넣지 않는다.
