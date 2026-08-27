@@ -22,7 +22,7 @@ TEST = 'incheon_600.png'                          # 인천, 실제 촬영본
 SHAVE = 4                                         # 점수 잴 때 잘라낼 가장자리
 
 __all__ = ['BASE', 'REP', 'TEST', 'SHAVE', 'fetch', 'pair', 'load_test',
-           'list_split', 'show', 'zoom', 'score', 'compare', 'bicubic', 'retarget',
+           'list_split', 'show', 'zoom', 'score', 'compare', 'bicubic', 'nearest', 'retarget',
            'np', 'plt', 'cv2', 'imageio', 'json', 'os', 'urllib']
 
 
@@ -54,6 +54,12 @@ def list_split(split):
 def bicubic(lr, scale=3):
     h, w = lr.shape[:2]
     return cv2.resize(lr, (w * scale, h * scale), interpolation=cv2.INTER_CUBIC)
+
+
+def nearest(lr, scale=3):
+    """원본 LR 을 확대해서 보여주기 위한 것. 최근접이라 화소가 그대로 각져 보인다."""
+    h, w = lr.shape[:2]
+    return cv2.resize(lr, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_NEAREST)
 
 
 def score(pred, gt):
