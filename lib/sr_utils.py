@@ -146,8 +146,8 @@ def zoom(panels, size=110, title='', ref=None, loc=None):
         b.imshow(im[yy:yy + ss, xx:xx + ss], interpolation='nearest')
         b.set_xticks([]); b.set_yticks([])
 
-    ax[0][0].set_ylabel('전체', fontsize=10)
-    ax[1][0].set_ylabel(f'확대 ({size}px)', fontsize=10)
+    ax[0][0].set_ylabel('full', fontsize=10)
+    ax[1][0].set_ylabel(f'zoom {size}px', fontsize=10)
     if title:
         fig.suptitle(title, fontsize=10)
     plt.tight_layout(); plt.show()
@@ -218,18 +218,14 @@ def show_results(upscale_fn, label='model', scale=3):
              loc='br', title=f'validation {i + 1} — {stem}')
 
 
-def show_test(upscale_fn, label='model', scale=3, save=True):
-    """6. 최종 테스트 — 인천 2구역 각각을 '전체 + 확대' 로. 정답이 없어 점수는 없다."""
-    out = []
+def show_test(upscale_fn, label='model', scale=3):
+    """6. 최종 테스트 — 인천 2구역 각각을 '전체 + 확대' 로. 정답이 없어 점수는 없다.
+
+    아무것도 돌려주지 않는다. 셀 마지막 줄에서 배열이 통째로 출력되면 안 되기 때문이다.
+    """
     for i in range(len(TESTS)):
         lr = load_test(i)
         bic = bicubic(lr, scale)
         sr = upscale_fn(lr)
         zoom([('Original LR', nearest(lr, scale)), ('Bicubic', bic), (label, sr)],
-             ref=bic, title=f'test {i + 1} (Incheon) — 정답 없음')
-        if save:
-            f = f'incheon{i + 1}_{label.lower()}.png'
-            imageio.imwrite(f, sr)
-            print(f'{f} 저장')
-        out.append(sr)
-    return out
+             ref=bic, title=f'test {i + 1} (Incheon) - no target')
