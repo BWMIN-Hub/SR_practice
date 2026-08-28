@@ -95,13 +95,14 @@ def show(items, title=''):
     plt.tight_layout(); plt.show()
 
 
-def zoom(panels, size=110, title='', ref=None):
+def zoom(panels, size=110, title='', ref=None, loc=None):
     """결과를 두 줄로 보여준다. panels: [(이름, 이미지)].
 
       윗줄 = 패치 전체 (노란 네모가 아랫줄에서 확대한 자리)
       아랫줄 = 그 구역만 확대
 
     확대할 자리는 가장 복잡한(경계가 많은) 구역을 자동으로 고른다.
+    loc 를 주면 그 자리를 쓴다. 'br'(오른쪽 아래) 같은 문자열이나 (y, x) 좌표.
     ref 를 주면 그 이미지를 기준으로 고른다. 안 주면 마지막 패널이 기준이다.
     모델 출력을 기준으로 삼으면 모델이 바뀔 때마다 보는 곳이 달라지므로,
     여러 모델을 비교할 때는 장면 자체(bicubic 등)를 기준으로 넘기는 것이 좋다.
@@ -111,14 +112,21 @@ def zoom(panels, size=110, title='', ref=None):
     ref = panels[-1][1] if ref is None else ref
     # 큰 씬(인천 1800px)에서 110px 창은 점처럼 보인다. 짧은 변의 1/8 이상은 되게 한다.
     size = max(size, min(ref.shape[:2]) // 8)
-    e = cv2.Canny(cv2.cvtColor(ref, cv2.COLOR_RGB2GRAY), 50, 150)
-    best, bs = (0, 0), -1.0
-    for y in range(0, ref.shape[0] - size, size // 2):
-        for x in range(0, ref.shape[1] - size, size // 2):
-            v = float(e[y:y + size, x:x + size].mean())
-            if v > bs:
-                best, bs = (y, x), v
-    y, x = best
+    H0, W0 = ref.shape[:2]
+    CORNER = {'br': (H0 - size, W0 - size), 'bl': (H0 - size, 0),
+              'tr': (0, W0 - size), 'tl': (0, 0), 'c': ((H0 - size) // 2, (W0 - size) // 2)}
+    if loc is not None:
+        y, x = CORNER[loc] if isinstance(loc, str) else loc
+        y, x = max(0, min(y, H0 - size)), max(0, min(x, W0 - size))
+    else:
+        e = cv2.Canny(cv2.cvtColor(ref, cv2.COLOR_RGB2GRAY), 50, 150)
+        best, bs = (0, 0), -1.0
+        for y in range(0, H0 - size, size // 2):
+            for x in range(0, W0 - size, size // 2):
+                v = float(e[y:y + size, x:x + size].mean())
+                if v > bs:
+                    best, bs = (y, x), v
+        y, x = best
     H = ref.shape[0]
 
     n = len(panels)
@@ -201,13 +209,13 @@ def show_data():
 
 
 def show_results(upscale_fn, label='model', scale=3):
-    """4. 결과 — validation 2패치 각각을 '전체 + 확대' 로."""
+    """4. 결과 — validation 2패치 각각을 '전체 + 확대' 로. 확대는 오른쪽 아래."""
     for i, stem in enumerate(REPS['validation']):
         lr, hr = pair('validation', stem)
         hr = retarget(hr, lr, scale)
         zoom([('Original LR', nearest(lr, scale)), ('Bicubic', bicubic(lr, scale)),
               (label, upscale_fn(lr)), ('Target HR', hr)],
-             title=f'validation {i + 1} — {stem}')
+             loc='br', title=f'validation {i + 1} — {stem}')
 
 
 def show_test(upscale_fn, label='model', scale=3, save=True):
