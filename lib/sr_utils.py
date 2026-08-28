@@ -13,16 +13,23 @@ from skimage.metrics import structural_similarity as _ssim
 BASE = 'https://raw.githubusercontent.com/BWMIN-Hub/SR_practice/main'
 API = 'https://api.github.com/repos/BWMIN-Hub/SR_practice/contents'
 
-# 각 split 의 대표 패치 (실습에서 이것 하나씩만 보여준다)
+# 각 split 의 대표 패치. REP 은 한 장(호환용), REPS 는 실습에서 보여줄 두 장이다.
 REP = {
     'training': 'AOI_Barcelona_10_y0128_x0128',
     'validation': 'AOI_Paris_1_6_y0064_x0192',   # 파리
 }
+REPS = {
+    'training': ['AOI_Barcelona_10_y0128_x0128', 'AOI_Seoul_14_y0256_x0128'],
+    'validation': ['AOI_Paris_1_6_y0064_x0192',   # 파리
+                   'AOI_Seoul_14_y0256_x0128'],  # 서울
+}
 TEST = 'incheon_600.png'                          # 인천, 실제 촬영본
+TESTS = ['incheon_600.png', 'incheon2_600.png']   # 같은 씬의 다른 두 구역
 SHAVE = 4                                         # 점수 잴 때 잘라낼 가장자리
 
-__all__ = ['BASE', 'REP', 'TEST', 'SHAVE', 'fetch', 'pair', 'load_test',
+__all__ = ['BASE', 'REP', 'REPS', 'TEST', 'TESTS', 'SHAVE', 'fetch', 'pair', 'load_test',
            'list_split', 'show', 'zoom', 'score', 'compare', 'bicubic', 'nearest', 'retarget',
+           'show_data', 'show_results', 'show_test',
            'np', 'plt', 'cv2', 'imageio', 'json', 'os', 'urllib']
 
 
@@ -41,9 +48,10 @@ def pair(split, stem):
     return lr, hr
 
 
-def load_test():
-    """test 대표(인천) 입력. 정답은 없다."""
-    return imageio.imread(fetch(f'{BASE}/dataset/test/{TEST}', 'test.png'))
+def load_test(i=0):
+    """test 대표(인천) 입력. 정답은 없다. i 로 두 구역 중 하나를 고른다."""
+    name = TESTS[i] if isinstance(i, int) else i
+    return imageio.imread(fetch(f'{BASE}/dataset/test/{name}', f'test_{name}'))
 
 
 def list_split(split):
@@ -178,3 +186,42 @@ def compare(upscale_fn, split='validation', plot=True, label='model', scale=3):
         a.grid(axis='y', alpha=.3); a.legend(fontsize=8)
     plt.tight_layout(); plt.show()
     return rows
+
+
+# ──────────────────────────────────────────────────────────────────────
+# 실습에서 쓰는 표시 헬퍼. validation 2패치, test 2구역을 한 번에 그린다.
+# ──────────────────────────────────────────────────────────────────────
+
+def show_data():
+    """1. 데이터 — validation 2패치 + test 2구역을 한눈에."""
+    panels = [(f'validation {i+1} ({s.split("_")[1]})', *pair('validation', s))
+              for i, s in enumerate(REPS['validation'])]
+    panels += [(f'test {i+1} (Incheon)', load_test(i), None) for i in range(len(TESTS))]
+    show(panels)
+
+
+def show_results(upscale_fn, label='model', scale=3):
+    """4. 결과 — validation 2패치 각각을 '전체 + 확대' 로."""
+    for i, stem in enumerate(REPS['validation']):
+        lr, hr = pair('validation', stem)
+        hr = retarget(hr, lr, scale)
+        zoom([('Original LR', nearest(lr, scale)), ('Bicubic', bicubic(lr, scale)),
+              (label, upscale_fn(lr)), ('Target HR', hr)],
+             title=f'validation {i + 1} — {stem}')
+
+
+def show_test(upscale_fn, label='model', scale=3, save=True):
+    """6. 최종 테스트 — 인천 2구역 각각을 '전체 + 확대' 로. 정답이 없어 점수는 없다."""
+    out = []
+    for i in range(len(TESTS)):
+        lr = load_test(i)
+        bic = bicubic(lr, scale)
+        sr = upscale_fn(lr)
+        zoom([('Original LR', nearest(lr, scale)), ('Bicubic', bic), (label, sr)],
+             ref=bic, title=f'test {i + 1} (Incheon) — 정답 없음')
+        if save:
+            f = f'incheon{i + 1}_{label.lower()}.png'
+            imageio.imwrite(f, sr)
+            print(f'{f} 저장')
+        out.append(sr)
+    return out
