@@ -229,5 +229,5 @@ def show_test(upscale_fn, label='model', scale=3):
         bic = bicubic(lr, scale)
         sr = upscale_fn(lr)
         zoom([('Original LR', nearest(lr, scale)), ('Bicubic', bic), (label, sr)],
-             ref=bic, size=150,      # 인천은 씬이 커서 좁게 잡아야 건물이 보인다
+             ref=bic, size=110,      # 인천은 씬이 커서 좁게 잡아야 건물이 보인다
              title=f'test {i + 1} (Incheon) - no target')
