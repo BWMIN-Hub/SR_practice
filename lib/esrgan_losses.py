@@ -5,13 +5,15 @@
      "평균적인 가짜보다 얼마나 더 진짜 같은가" 를 본다
   3) 화소 손실이 L1 (SRGAN 은 MSE)
 
-가중치는 논문 기본값: pixel 1e-2, perceptual 1.0, gan 5e-3
+가중치는 논문 기본값(pixel 1e-2 / perceptual 1.0 / gan 5e-3)에서 재조정했다.
+논문 값으로는 지각 손실이 Loss_G 의 97% 를 차지해 화소 정확도가 무시된다.
+pixel 을 1 로 올려 화소 손실이 3분의 1 정도를 담당하게 맞췄다.
 """
 import torch
 import torch.nn as nn
 from torchvision.models import vgg19
 
-W = {'pixel': 1e-2, 'perceptual': 1.0, 'gan': 5e-3}
+W = {'pixel': 1, 'perceptual': 1e-1, 'gan': 5e-4}
 MEAN = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1)
 STD = torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1)
 
