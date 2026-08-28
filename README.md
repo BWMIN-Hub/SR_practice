@@ -1,6 +1,6 @@
 # Colab 실습 번들
 
-위성사진 초해상화(SR) 실습. 노트북 3개 모두 **구글 드라이브·git clone·pip install 없이**
+위성사진 초해상화(SR) 실습. 노트북 전부 **구글 드라이브·git clone·pip install 없이**
 필요한 파일만 내려받아 돌아간다.
 
 | 노트북 | 내용 | GPU |
@@ -11,6 +11,7 @@
 | [`02_srgan_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/02_srgan_x3.ipynb) | SRGAN — 판별자 붕괴 | 선택 |
 | [`03_esrgan_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/03_esrgan_x3.ipynb) | ESRGAN — RRDB + RaGAN | 선택 |
 | [`04_swinir_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/04_swinir_x3.ipynb) | SwinIR — Transformer, GAN 없음 | 선택 |
+| [`05_hat_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/05_hat_x3.ipynb) | HAT — Transformer 확장 | 선택 |
 
 전부 같은 순서다: **데이터 시각화 → (학습) → 적용 → 정량 평가 → 결과**.
 이론 설명은 노트북에 넣지 않는다.
