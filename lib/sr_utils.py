@@ -19,7 +19,7 @@ REP = {
     'validation': 'AOI_Paris_1_6_y0064_x0192',   # 파리
 }
 REPS = {
-    'training': ['AOI_Barcelona_10_y0128_x0128', 'AOI_Seoul_14_y0256_x0128'],
+    'training': ['AOI_Barcelona_10_y0128_x0128', 'AOI_Busan_10_y0128_x0128'],
     'validation': ['AOI_Paris_1_6_y0064_x0192',   # 파리
                    'AOI_Seoul_14_y0256_x0128'],  # 서울
 }
