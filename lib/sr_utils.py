@@ -88,13 +88,21 @@ def show(items, title=''):
 
 
 def zoom(panels, size=110, title='', ref=None):
-    """가장 복잡한 구역을 찾아 확대 비교. panels: [(이름, 이미지)].
+    """결과를 두 줄로 보여준다. panels: [(이름, 이미지)].
 
-    ref 를 주면 그 이미지를 기준으로 위치를 고른다. 안 주면 마지막 패널이 기준이다.
+      윗줄 = 패치 전체 (노란 네모가 아랫줄에서 확대한 자리)
+      아랫줄 = 그 구역만 확대
+
+    확대할 자리는 가장 복잡한(경계가 많은) 구역을 자동으로 고른다.
+    ref 를 주면 그 이미지를 기준으로 고른다. 안 주면 마지막 패널이 기준이다.
     모델 출력을 기준으로 삼으면 모델이 바뀔 때마다 보는 곳이 달라지므로,
     여러 모델을 비교할 때는 장면 자체(bicubic 등)를 기준으로 넘기는 것이 좋다.
     """
+    from matplotlib.patches import Rectangle
+
     ref = panels[-1][1] if ref is None else ref
+    # 큰 씬(인천 1800px)에서 110px 창은 점처럼 보인다. 짧은 변의 1/8 이상은 되게 한다.
+    size = max(size, min(ref.shape[:2]) // 8)
     e = cv2.Canny(cv2.cvtColor(ref, cv2.COLOR_RGB2GRAY), 50, 150)
     best, bs = (0, 0), -1.0
     for y in range(0, ref.shape[0] - size, size // 2):
@@ -103,10 +111,27 @@ def zoom(panels, size=110, title='', ref=None):
             if v > bs:
                 best, bs = (y, x), v
     y, x = best
-    fig, ax = plt.subplots(1, len(panels), figsize=(2.9 * len(panels), 3.2), squeeze=False)
-    for a, (n, im) in zip(ax[0], panels):
-        a.imshow(im[y:y + size, x:x + size], interpolation='nearest')
-        a.set_title(n, fontsize=9); a.set_xticks([]); a.set_yticks([])
+    H = ref.shape[0]
+
+    n = len(panels)
+    fig, ax = plt.subplots(2, n, figsize=(2.9 * n, 6.4), squeeze=False)
+    for j, (name, im) in enumerate(panels):
+        # 패널마다 해상도가 다를 수 있으니 비율로 환산한다
+        f = im.shape[0] / H
+        yy, xx, ss = int(y * f), int(x * f), max(4, int(size * f))
+
+        a = ax[0][j]
+        a.imshow(im, interpolation='nearest')
+        a.add_patch(Rectangle((xx, yy), ss, ss, fill=False, ec='#ffcc00', lw=1.6))
+        a.set_title(name, fontsize=9)
+        a.set_xticks([]); a.set_yticks([])
+
+        b = ax[1][j]
+        b.imshow(im[yy:yy + ss, xx:xx + ss], interpolation='nearest')
+        b.set_xticks([]); b.set_yticks([])
+
+    ax[0][0].set_ylabel('전체', fontsize=10)
+    ax[1][0].set_ylabel(f'확대 ({size}px)', fontsize=10)
     if title:
         fig.suptitle(title, fontsize=10)
     plt.tight_layout(); plt.show()
