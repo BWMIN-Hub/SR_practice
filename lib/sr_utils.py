@@ -95,7 +95,7 @@ def show(items, title=''):
     plt.tight_layout(); plt.show()
 
 
-def zoom(panels, size=110, title='', ref=None, loc=None):
+def zoom(panels, size=None, title='', ref=None, loc=None):
     """결과를 두 줄로 보여준다. panels: [(이름, 이미지)].
 
       윗줄 = 패치 전체 (노란 네모가 아랫줄에서 확대한 자리)
@@ -110,8 +110,9 @@ def zoom(panels, size=110, title='', ref=None, loc=None):
     from matplotlib.patches import Rectangle
 
     ref = panels[-1][1] if ref is None else ref
-    # 큰 씬(인천 1800px)에서 110px 창은 점처럼 보인다. 짧은 변의 1/8 이상은 되게 한다.
-    size = max(size, min(ref.shape[:2]) // 8)
+    # size 를 안 주면 그림 크기에 맞춰 정한다. 주면 그 값을 그대로 쓴다.
+    if size is None:
+        size = max(110, min(ref.shape[:2]) // 8)
     H0, W0 = ref.shape[:2]
     CORNER = {'br': (H0 - size, W0 - size), 'bl': (H0 - size, 0),
               'tr': (0, W0 - size), 'tl': (0, 0), 'c': ((H0 - size) // 2, (W0 - size) // 2)}
@@ -228,4 +229,5 @@ def show_test(upscale_fn, label='model', scale=3):
         bic = bicubic(lr, scale)
         sr = upscale_fn(lr)
         zoom([('Original LR', nearest(lr, scale)), ('Bicubic', bic), (label, sr)],
-             ref=bic, title=f'test {i + 1} (Incheon) - no target')
+             ref=bic, size=150,      # 인천은 씬이 커서 좁게 잡아야 건물이 보인다
+             title=f'test {i + 1} (Incheon) - no target')
