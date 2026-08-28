@@ -95,14 +95,16 @@ def show(items, title=''):
     plt.tight_layout(); plt.show()
 
 
-def zoom(panels, size=None, title='', ref=None, loc=None):
+def zoom(panels, size=None, title='', ref=None, loc=None, center=None):
     """결과를 두 줄로 보여준다. panels: [(이름, 이미지)].
 
       윗줄 = 패치 전체 (노란 네모가 아랫줄에서 확대한 자리)
       아랫줄 = 그 구역만 확대
 
     확대할 자리는 가장 복잡한(경계가 많은) 구역을 자동으로 고른다.
-    loc 를 주면 그 자리를 쓴다. 'br'(오른쪽 아래) 같은 문자열이나 (y, x) 좌표.
+    center=(x, y) 로 확대할 중심을 직접 지정할 수 있다. 좌표는 위 줄에 보이는
+    그림(=결과 크기, LR x3) 기준이다. loc 는 'br'(오른쪽 아래) 같은 모서리 지정.
+    center > loc > 자동 선택 순으로 우선한다.
     ref 를 주면 그 이미지를 기준으로 고른다. 안 주면 마지막 패널이 기준이다.
     모델 출력을 기준으로 삼으면 모델이 바뀔 때마다 보는 곳이 달라지므로,
     여러 모델을 비교할 때는 장면 자체(bicubic 등)를 기준으로 넘기는 것이 좋다.
@@ -116,7 +118,11 @@ def zoom(panels, size=None, title='', ref=None, loc=None):
     H0, W0 = ref.shape[:2]
     CORNER = {'br': (H0 - size, W0 - size), 'bl': (H0 - size, 0),
               'tr': (0, W0 - size), 'tl': (0, 0), 'c': ((H0 - size) // 2, (W0 - size) // 2)}
-    if loc is not None:
+    if center is not None:
+        cx, cy = center
+        y, x = int(cy) - size // 2, int(cx) - size // 2
+        y, x = max(0, min(y, H0 - size)), max(0, min(x, W0 - size))
+    elif loc is not None:
         y, x = CORNER[loc] if isinstance(loc, str) else loc
         y, x = max(0, min(y, H0 - size)), max(0, min(x, W0 - size))
     else:
@@ -148,7 +154,8 @@ def zoom(panels, size=None, title='', ref=None, loc=None):
         b.set_xticks([]); b.set_yticks([])
 
     ax[0][0].set_ylabel('full', fontsize=10)
-    ax[1][0].set_ylabel(f'zoom {size}px', fontsize=10)
+    ax[1][0].set_ylabel(f'zoom {size}px\ncenter=({x + size // 2}, {y + size // 2})',
+                        fontsize=9)
     if title:
         fig.suptitle(title, fontsize=10)
     plt.tight_layout(); plt.show()
@@ -209,18 +216,34 @@ def show_data():
     show(panels)
 
 
-def show_results(upscale_fn, label='model', scale=3):
-    """4. 결과 — validation 2패치 각각을 '전체 + 확대' 로. 확대는 오른쪽 아래."""
+def _per_patch(v, i):
+    """center 를 하나만 주면 모두에, [(x,y), (x,y)] 로 주면 패치별로 쓴다."""
+    if v is None:
+        return None
+    return v[i] if isinstance(v[0], (list, tuple)) else v
+
+
+def show_results(upscale_fn, label='model', scale=3, center=None, size=None):
+    """4. 결과 — validation 2패치 각각을 '전체 + 확대' 로.
+
+    center=(x, y) 로 확대 위치를 지정한다. 안 주면 오른쪽 아래.
+    패치마다 다르게 하려면 center=[(x1, y1), (x2, y2)].
+    """
     for i, stem in enumerate(REPS['validation']):
         lr, hr = pair('validation', stem)
         hr = retarget(hr, lr, scale)
+        c = _per_patch(center, i)
         zoom([('Original LR', nearest(lr, scale)), ('Bicubic', bicubic(lr, scale)),
               (label, upscale_fn(lr)), ('Target HR', hr)],
-             loc='br', title=f'validation {i + 1} — {stem}')
+             loc=None if c else 'br', center=c, size=size,
+             title=f'validation {i + 1} — {stem}')
 
 
-def show_test(upscale_fn, label='model', scale=3):
+def show_test(upscale_fn, label='model', scale=3, center=None, size=110):
     """6. 최종 테스트 — 인천 2구역 각각을 '전체 + 확대' 로. 정답이 없어 점수는 없다.
+
+    center=(x, y) 로 확대 위치를 지정한다 (결과 크기 1800px 기준). 안 주면 자동.
+    구역마다 다르게 하려면 center=[(x1, y1), (x2, y2)].
 
     아무것도 돌려주지 않는다. 셀 마지막 줄에서 배열이 통째로 출력되면 안 되기 때문이다.
     """
@@ -229,5 +252,5 @@ def show_test(upscale_fn, label='model', scale=3):
         bic = bicubic(lr, scale)
         sr = upscale_fn(lr)
         zoom([('Original LR', nearest(lr, scale)), ('Bicubic', bic), (label, sr)],
-             ref=bic, size=110,      # 인천은 씬이 커서 좁게 잡아야 건물이 보인다
+             ref=bic, size=size, center=_per_patch(center, i),
              title=f'test {i + 1} (Incheon) - no target')
