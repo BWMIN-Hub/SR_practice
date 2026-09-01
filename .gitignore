@@ -2,7 +2,10 @@
 dataset/**/bin/
 # 학습 산출물 (Colab에서는 Drive로 심볼릭 링크된다)
 models/*/code/experiment/
-results/
+# results/ 는 무시하되 비교 페이지가 불러오는 미리 뽑은 결과만 예외로 둔다.
+# 디렉터리 자체를 제외하면 하위 예외가 안 먹으므로 results/* 로 쓴다.
+results/*
+!results/comparison/
 __pycache__/
 *.pyc
 .ipynb_checkpoints/

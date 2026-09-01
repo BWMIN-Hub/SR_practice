@@ -1,0 +1,90 @@
+{
+ "val1": {
+  "title": "validation 1 — AOI_Paris_1_6_y0064_x0192",
+  "center": [
+   180,
+   300
+  ],
+  "size": 55,
+  "box": [
+   153,
+   273,
+   55
+  ],
+  "full": [
+   384,
+   384
+  ],
+  "overview": [
+   384,
+   384
+  ],
+  "has_hr": true
+ },
+ "val2": {
+  "title": "validation 2 — AOI_Seoul_14_y0256_x0128",
+  "center": [
+   300,
+   80
+  ],
+  "size": 55,
+  "box": [
+   273,
+   53,
+   55
+  ],
+  "full": [
+   384,
+   384
+  ],
+  "overview": [
+   384,
+   384
+  ],
+  "has_hr": true
+ },
+ "test1": {
+  "title": "test 1 (Incheon) — no target",
+  "center": [
+   800,
+   800
+  ],
+  "size": 70,
+  "box": [
+   765,
+   765,
+   70
+  ],
+  "full": [
+   1800,
+   1800
+  ],
+  "overview": [
+   800,
+   800
+  ],
+  "has_hr": false
+ },
+ "test2": {
+  "title": "test 2 (Incheon) — no target",
+  "center": [
+   800,
+   800
+  ],
+  "size": 70,
+  "box": [
+   765,
+   765,
+   70
+  ],
+  "full": [
+   1800,
+   1800
+  ],
+  "overview": [
+   800,
+   800
+  ],
+  "has_hr": false
+ }
+}
