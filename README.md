@@ -14,6 +14,7 @@
 | [`06_swinir_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/06_swinir_x3.ipynb) | SwinIR — Transformer, GAN 없음 | 선택 |
 | [`07_hat_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/07_hat_x3.ipynb) | HAT — Transformer 확장 | 선택 |
 | [`09_comparison`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/09_comparison.ipynb) | 일곱 모델 한자리 비교 (GPU 불필요) | 불필요 |
+| [`10_pair_strategies`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/10_pair_strategies.ipynb) | LR/HR 쌍 구축 전략 4가지 비교 (GPU 불필요) | 불필요 |
 | [`minimal`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/minimal.ipynb) | 번호 없음 — 학습된 EDSR 만 적용하는 최소 예제 | 선택 |
 
 번호가 곧 배우는 순서이자 모델이 나온 순서다 (SRCNN 2014 → HAT 2023).
