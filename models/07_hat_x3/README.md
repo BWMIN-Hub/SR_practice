@@ -1,4 +1,4 @@
-# 05 · HAT ×3
+# 07 · HAT ×3
 
 [XPixelGroup/HAT](https://github.com/XPixelGroup/HAT) 을 우리 위성 데이터로 학습.
 신경망 정의는 업스트림 `hat/archs/hat_arch.py` 를 그대로 쓴다(`lib/hat_arch.py`).
@@ -15,7 +15,7 @@
 | 목표 | IKONOS HR (3.3333 m), LR × 3 |
 | 학습 | IKONOS 804쌍, 100 epoch, batch 4, LR 패치 48, Adam 2e-4 (50·75·90% 지점 절반) |
 | 가중치 | `checkpoints/hat_x3.pth` (epoch 100, 20.81M) |
-| 노트북 | [`../../notebooks/05_hat_x3.ipynb`](../../notebooks/05_hat_x3.ipynb) |
+| 노트북 | [`../../notebooks/07_hat_x3.ipynb`](../../notebooks/07_hat_x3.ipynb) |
 
 `timm` 과 `einops` 가 필요하다 (`pip install timm einops`).
 

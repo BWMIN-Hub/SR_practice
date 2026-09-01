@@ -1,4 +1,4 @@
-# 06 · SRCNN ×3
+# 01 · SRCNN ×3
 
 [Lornatang/SRCNN-PyTorch](https://github.com/Lornatang/SRCNN-PyTorch) 를 우리 위성 데이터로 학습.
 신경망 정의(`model.py`)와 이미지 처리(`imgproc.py`)는 업스트림 사본을 **한 글자도 고치지 않고**
@@ -15,7 +15,7 @@
 | 목표 | IKONOS HR (3.3333 m) 의 Y 채널 |
 | 학습 | IKONOS 804쌍, 100 epoch, batch 16, LR 크롭 48, Adam 2e-4 (50·75·90% 지점 절반) |
 | 가중치 | `checkpoints/srcnn_x3.pth` (57.3K) |
-| 노트북 | [`../../notebooks/06_srcnn_x3.ipynb`](../../notebooks/06_srcnn_x3.ipynb) |
+| 노트북 | [`../../notebooks/01_srcnn_x3.ipynb`](../../notebooks/01_srcnn_x3.ipynb) |
 
 추가 설치가 필요 없다. Colab 기본 패키지로 돈다.
 

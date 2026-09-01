@@ -1,4 +1,4 @@
-# 01 · EDSR ×3 — 흐린 위성사진을 3배 선명하게
+# 03 · EDSR ×3 — 흐린 위성사진을 3배 선명하게
 
 Sentinel-2 위성이 찍은 10 m짜리 사진을 IKONOS급 3.33 m짜리처럼 만드는 모델이다.
 가로세로 각각 3배로 키우기 때문에 **×3 초해상화**라고 부른다.
@@ -11,7 +11,7 @@ Colab 무료 GPU에서도 몇 분이면 학습된다.
 |---|---|
 | 넣는 것 | 10 m 위성사진 (RGB 3색) |
 | 나오는 것 | 3.3333 m 사진. **위치 정보가 그대로 붙어 있어** QGIS에서 원본 위에 겹쳐볼 수 있다 |
-| 노트북 | [`../../notebooks/01_edsr_x3.ipynb`](../../notebooks/01_edsr_x3.ipynb) |
+| 노트북 | [`../../notebooks/03_edsr_x3.ipynb`](../../notebooks/03_edsr_x3.ipynb) |
 
 원본 프로젝트의 자세한 실험 기록은 `code/README_S2SR.md` 에 있다.
 
@@ -93,7 +93,7 @@ Busan 23.7%, Seoul 22.7%, **Munich 14.4%**).
 GPU=0 DATA=COLAB DIR_DATA=/content/colab/dataset \
 EPOCHS=11 DECAY=5-8 LR=1e-4 TEST_EVERY=100 PRINT_EVERY=20 N_THREADS=2 \
 SAVE=edsr_colab_x3 SAVE_RESULTS=0 RESET=1 \
-PRETRAIN=/content/colab/models/01_edsr_x3/checkpoints/edsr_ikonos_x3_best.pt \
+PRETRAIN=/content/colab/models/03_edsr_x3/checkpoints/edsr_ikonos_x3_best.pt \
 bash code/run_train.sh
 ```
 

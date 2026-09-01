@@ -1,4 +1,4 @@
-# 04 · SwinIR ×3 (classical)
+# 06 · SwinIR ×3 (classical)
 
 [JingyunLiang/SwinIR](https://github.com/JingyunLiang/SwinIR) 을 우리 위성 데이터로 학습.
 신경망 정의는 업스트림 `models/network_swinir.py` 를 그대로 쓴다(`lib/swinir_arch.py`).
@@ -14,7 +14,7 @@
 | 목표 | IKONOS HR (3.3333 m), LR × 3 |
 | 학습 | IKONOS 804쌍, 100 epoch, batch 8, LR 패치 48, Adam 2e-4 (50·75·90% 지점 절반) |
 | 가중치 | `checkpoints/swinir_x3.pth` (epoch 100, 11.94M) |
-| 노트북 | [`../../notebooks/04_swinir_x3.ipynb`](../../notebooks/04_swinir_x3.ipynb) |
+| 노트북 | [`../../notebooks/06_swinir_x3.ipynb`](../../notebooks/06_swinir_x3.ipynb) |
 
 ## ×3 을 고칠 필요가 없었다
 

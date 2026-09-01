@@ -1,4 +1,4 @@
-# 02 · SRGAN ×3
+# 04 · SRGAN ×3
 
 [leftthomas/SRGAN](https://github.com/leftthomas/SRGAN) 을 우리 위성 데이터로 학습.
 **모델 구조와 손실은 업스트림 그대로**이고 데이터셋만 바꿨다.
@@ -9,7 +9,7 @@
 | 목표 | IKONOS HR (3.3333 m), LR × 3 |
 | 학습 | IKONOS 804쌍, 100 epoch, batch 32, crop 96 |
 | 가중치 | `checkpoints/srgan_g_x3.pth` |
-| 노트북 | [`../../notebooks/02_srgan_x3.ipynb`](../../notebooks/02_srgan_x3.ipynb) |
+| 노트북 | [`../../notebooks/04_srgan_x3.ipynb`](../../notebooks/04_srgan_x3.ipynb) |
 
 ## ×3 을 위해 고친 곳
 

@@ -1,4 +1,4 @@
-# 07 · VDSR ×3
+# 02 · VDSR ×3
 
 [Lornatang/VDSR-PyTorch](https://github.com/Lornatang/VDSR-PyTorch) 를 우리 위성 데이터로 학습.
 신경망 정의(`model.py`)와 이미지 처리(`imgproc.py`)는 업스트림 사본을 **한 글자도 고치지 않고**
@@ -14,7 +14,7 @@
 | 목표 | IKONOS HR (3.3333 m) 의 Y 채널 |
 | 학습 | IKONOS 804쌍, **29 epoch**, batch 16, LR 크롭 48, SGD 0.1 + 기울기 자르기 0.01, StepLR(12, 0.1) |
 | 가중치 | `checkpoints/vdsr_x3.pth` (epoch 29, 0.66M) |
-| 노트북 | [`../../notebooks/07_vdsr_x3.ipynb`](../../notebooks/07_vdsr_x3.ipynb) |
+| 노트북 | [`../../notebooks/02_vdsr_x3.ipynb`](../../notebooks/02_vdsr_x3.ipynb) |
 
 추가 설치가 필요 없다. Colab 기본 패키지로 돈다.
 

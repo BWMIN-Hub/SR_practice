@@ -5,17 +5,17 @@
 
 | 노트북 | 내용 | GPU |
 |---|---|---|
-| [`01_interpolation_basics`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/01_interpolation_basics.ipynb) | 보간법 4종 ×2·×3·×4 baseline | 불필요 |
-| [`06_srcnn_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/06_srcnn_x3.ipynb) | SRCNN — 최초의 CNN, conv 3장 | 선택 |
-| [`07_vdsr_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/07_vdsr_x3.ipynb) | VDSR — conv 20장 + 잔차 학습 | 선택 |
-| [`00_minimal`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/00_minimal.ipynb) | 학습된 EDSR 적용 | 선택 |
-| [`01_edsr_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/01_edsr_x3.ipynb) | 학습 루프 + 적용 | 권장 |
-| [`02_srgan_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/02_srgan_x3.ipynb) | SRGAN — 판별자 붕괴 | 선택 |
-| [`03_esrgan_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/03_esrgan_x3.ipynb) | ESRGAN — RRDB + RaGAN | 선택 |
-| [`04_swinir_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/04_swinir_x3.ipynb) | SwinIR — Transformer, GAN 없음 | 선택 |
-| [`05_hat_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/05_hat_x3.ipynb) | HAT — Transformer 확장 | 선택 |
+| [`00_interpolation_basics`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/00_interpolation_basics.ipynb) | 보간법 4종 ×2·×3·×4 baseline | 불필요 |
+| [`01_srcnn_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/01_srcnn_x3.ipynb) | SRCNN — 최초의 CNN, conv 3장 | 선택 |
+| [`02_vdsr_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/02_vdsr_x3.ipynb) | VDSR — conv 20장 + 잔차 학습 | 선택 |
+| [`03_edsr_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/03_edsr_x3.ipynb) | EDSR — 학습 루프 + 적용 | 권장 |
+| [`04_srgan_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/04_srgan_x3.ipynb) | SRGAN — 판별자 붕괴 | 선택 |
+| [`05_esrgan_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/05_esrgan_x3.ipynb) | ESRGAN — RRDB + RaGAN, 손실 가중치 | 선택 |
+| [`06_swinir_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/06_swinir_x3.ipynb) | SwinIR — Transformer, GAN 없음 | 선택 |
+| [`07_hat_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/07_hat_x3.ipynb) | HAT — Transformer 확장 | 선택 |
+| [`minimal`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/minimal.ipynb) | 번호 없음 — 학습된 EDSR 만 적용하는 최소 예제 | 선택 |
 
-표는 배우는 순서다. **파일 번호는 만든 순서**라 `06_srcnn_x3` 이 가장 오래된 모델이다.
+번호가 곧 배우는 순서이자 모델이 나온 순서다 (SRCNN 2014 → HAT 2023).
 
 전부 같은 순서다: **데이터 시각화 → (학습) → 적용 → 정량 평가 → 결과**.
 이론 설명은 노트북에 넣지 않는다.
@@ -40,15 +40,15 @@ colab/
 │   ├── validation/   실전시험 10쌍 (배울 때 안 본 지역)
 │   └── test/         최종 테스트용 인천 사진 1장 (정답 없음)
 ├── models/
-│   └── 01_edsr_x3/   모델 하나가 폴더 하나
+│   └── 03_edsr_x3/   모델 하나가 폴더 하나
 │       ├── README.md     이 모델 설명
 │       ├── code/         돌아가는 데 필요한 코드 전부
 │       └── checkpoints/  미리 학습해둔 파일 (여기서 이어서 배운다)
 ├── lib/              모델·손실·유틸 (노트북이 import 한다)
 ├── notebooks/
-│   ├── 00_minimal.ipynb
-│   ├── 01_interpolation_basics.ipynb
-│   └── 01_edsr_x3.ipynb
+│   ├── minimal.ipynb
+│   ├── 00_interpolation_basics.ipynb
+│   └── 03_edsr_x3.ipynb
 └── tools/
     └── check_pairs.py    사진 짝이 잘 맞는지 검사하는 도구
 ```

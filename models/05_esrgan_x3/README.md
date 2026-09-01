@@ -1,4 +1,4 @@
-# 03 · ESRGAN ×3
+# 05 · ESRGAN ×3
 
 [xinntao/ESRGAN](https://github.com/xinntao/ESRGAN) 구성을 우리 위성 데이터로 학습.
 
@@ -20,7 +20,7 @@ ESRGAN 쪽 가중치는 아래 "손실 가중치를 재조정했다" 를 보라.
 | 목표 | IKONOS HR (3.3333 m), LR × 3 |
 | 학습 | IKONOS 804쌍, batch 16, crop 96, RRDB 8블록. 100 epoch(논문 가중치) + 10 epoch(재조정) |
 | 가중치 | `checkpoints/esrgan_g_x3.pth` (epoch 58 에서 재조정 10 epoch) |
-| 노트북 | [`../../notebooks/03_esrgan_x3.ipynb`](../../notebooks/03_esrgan_x3.ipynb) |
+| 노트북 | [`../../notebooks/05_esrgan_x3.ipynb`](../../notebooks/05_esrgan_x3.ipynb) |
 
 ## ×3 을 위해 고친 곳
 
