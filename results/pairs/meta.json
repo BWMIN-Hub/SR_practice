@@ -1,0 +1,18 @@
+{
+ "val1": {
+  "stem": "AOI_Barcelona_2_y0384_x0256",
+  "scene": "AOI_Barcelona_2"
+ },
+ "val2": {
+  "stem": "AOI_Munich_16_y0384_x0128",
+  "scene": "AOI_Munich_16"
+ },
+ "train1": {
+  "stem": "AOI_Barcelona_10_y0128_x0128",
+  "scene": "AOI_Barcelona_10"
+ },
+ "train2": {
+  "stem": "AOI_Seoul_9_y0256_x0128",
+  "scene": "AOI_Seoul_9"
+ }
+}
