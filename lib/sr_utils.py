@@ -114,7 +114,7 @@ def zoom(panels, size=None, title='', ref=None, loc=None, center=None):
     ref = panels[-1][1] if ref is None else ref
     # size 를 안 주면 그림 크기에 맞춰 정한다. 주면 그 값을 그대로 쓴다.
     if size is None:
-        size = max(110, min(ref.shape[:2]) // 8)
+        size = max(55, min(ref.shape[:2]) // 16)
     H0, W0 = ref.shape[:2]
     CORNER = {'br': (H0 - size, W0 - size), 'bl': (H0 - size, 0),
               'tr': (0, W0 - size), 'tl': (0, 0), 'c': ((H0 - size) // 2, (W0 - size) // 2)}
@@ -239,7 +239,7 @@ def show_results(upscale_fn, label='model', scale=3, center=None, size=None):
              title=f'validation {i + 1} — {stem}')
 
 
-def show_test(upscale_fn, label='model', scale=3, center=None, size=110):
+def show_test(upscale_fn, label='model', scale=3, center=None, size=55):
     """6. 최종 테스트 — 인천 2구역 각각을 '전체 + 확대' 로. 정답이 없어 점수는 없다.
 
     center=(x, y) 로 확대 위치를 지정한다 (결과 크기 1800px 기준). 안 주면 자동.
