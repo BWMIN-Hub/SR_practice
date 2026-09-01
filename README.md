@@ -7,6 +7,7 @@
 |---|---|---|
 | [`01_interpolation_basics`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/01_interpolation_basics.ipynb) | 보간법 4종 ×2·×3·×4 baseline | 불필요 |
 | [`06_srcnn_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/06_srcnn_x3.ipynb) | SRCNN — 최초의 CNN, conv 3장 | 선택 |
+| [`07_vdsr_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/07_vdsr_x3.ipynb) | VDSR — conv 20장 + 잔차 학습 | 선택 |
 | [`00_minimal`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/00_minimal.ipynb) | 학습된 EDSR 적용 | 선택 |
 | [`01_edsr_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/01_edsr_x3.ipynb) | 학습 루프 + 적용 | 권장 |
 | [`02_srgan_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/02_srgan_x3.ipynb) | SRGAN — 판별자 붕괴 | 선택 |
