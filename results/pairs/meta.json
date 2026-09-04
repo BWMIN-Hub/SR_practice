@@ -1,12 +1,4 @@
 {
- "val1": {
-  "stem": "AOI_Barcelona_2_y0384_x0256",
-  "scene": "AOI_Barcelona_2"
- },
- "val2": {
-  "stem": "AOI_Munich_16_y0384_x0128",
-  "scene": "AOI_Munich_16"
- },
  "train1": {
   "stem": "AOI_Barcelona_10_y0128_x0128",
   "scene": "AOI_Barcelona_10"
@@ -15,16 +7,12 @@
   "stem": "AOI_Seoul_9_y0256_x0128",
   "scene": "AOI_Seoul_9"
  },
- "variants": [
-  "S0010",
-  "S0020",
-  "S0030",
-  "S0050",
-  "S0075",
-  "S0100",
-  "S0150",
-  "S0200",
-  "S0300",
-  "S0400"
- ]
+ "val1": {
+  "stem": "AOI_Barcelona_2_y0384_x0256",
+  "scene": "AOI_Barcelona_2"
+ },
+ "val2": {
+  "stem": "AOI_Busan_7_y0256_x0000",
+  "scene": "AOI_Busan_7"
+ }
 }
