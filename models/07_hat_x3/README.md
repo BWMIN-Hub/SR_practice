@@ -76,8 +76,6 @@ Colab T4(15 GB)에서 학습 데모를 돌릴 때 참고. batch 1 기준 peak:
 
 노트북 데모는 64px 로 자른다. SwinIR(128px batch 1 = 6 GB)보다 두 배 무겁다.
 
-`statistics/train_results.csv` 에 epoch 별 L1·PSNR·학습률 100행.
-
 ## g_LR 변형 10종으로 2 epoch 이어 학습 (2026-09-04)
 
 같은 HR 에 열화 세기가 다른 g_LR 을 10벌 만든 학습셋(486타일 × 10 = 4,860장)으로

@@ -34,4 +34,3 @@
 | Bicubic | 18.15 | 0.4805 |
 | SRGAN | **18.30** | **0.5187** |
 
-`statistics/train_results.csv` 에 epoch 별 지표 100행.

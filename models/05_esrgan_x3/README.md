@@ -77,5 +77,3 @@ PSNR 은 아직 bicubic 아래인데, 그것까지는 설계 결과다. 원논�
 오르고 `Loss_D` 가 0.0000 을 자주 찍는다. 이 설정으로 더 길게 돌리면 기울기가 말라
 GAN 항이 죽는다. `--lr_d` 를 낮추거나 gan 가중치를 더 줄여야 한다.
 
-`statistics/train_results.csv` 에 epoch 별 지표 110행 (`phase` 열이 1 이면 논문
-가중치, 2 면 재조정), `ESRGAN/statistics/esrgan_x3{,_w1}_batch.csv` 에 배치별 기록.

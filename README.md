@@ -15,11 +15,10 @@
 | [`07_hat_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/07_hat_x3.ipynb) | HAT — Transformer 확장 | 선택 |
 | [`09_comparison`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/09_comparison.ipynb) | 일곱 모델 한자리 비교 (GPU 불필요) | 불필요 |
 | [`10_pair_strategies`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/10_pair_strategies.ipynb) | LR/HR 쌍 구축 전략 4가지 비교 (GPU 불필요) | 불필요 |
-| [`minimal`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/minimal.ipynb) | 번호 없음 — 학습된 EDSR 만 적용하는 최소 예제 | 선택 |
 
 번호가 곧 배우는 순서이자 모델이 나온 순서다 (SRCNN 2014 → HAT 2023).
 
-전부 같은 순서다: **데이터 시각화 → (학습) → 적용 → 정량 평가 → 결과**.
+모델 페이지는 전부 같은 순서다: **데이터 → 훈련 → 결과 → 평가 → 최종 테스트(인천)**.
 이론 설명은 노트북에 넣지 않는다.
 
 대표 패치는 각 1장으로 고정했다 — training은 Barcelona, validation은 **Paris**,
@@ -48,7 +47,6 @@ colab/
 │       └── checkpoints/  미리 학습해둔 파일 (여기서 이어서 배운다)
 ├── lib/              모델·손실·유틸 (노트북이 import 한다)
 ├── notebooks/
-│   ├── minimal.ipynb
 │   ├── 00_interpolation_basics.ipynb
 │   └── 03_edsr_x3.ipynb
 └── tools/
