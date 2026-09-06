@@ -1,6 +1,6 @@
 {
  "val1": {
-  "title": "validation 1 — AOI_Paris_1_6_y0064_x0192",
+  "title": "validation 1 \u2014 AOI_Paris_1_6_y0064_x0192",
   "full": [
    384,
    384
@@ -20,7 +20,7 @@
   "has_hr": true
  },
  "val2": {
-  "title": "validation 2 — AOI_Seoul_14_y0256_x0128",
+  "title": "validation 2 \u2014 AOI_Seoul_14_y0256_x0128",
   "full": [
    384,
    384
@@ -40,7 +40,7 @@
   "has_hr": true
  },
  "test1": {
-  "title": "test 1 (Incheon) — no target",
+  "title": "test 1 (Incheon) \u2014 no target",
   "full": [
    1800,
    1800
@@ -60,7 +60,7 @@
   "has_hr": false
  },
  "test2": {
-  "title": "test 2 (Incheon) — no target",
+  "title": "test 2 (Incheon) \u2014 no target",
   "full": [
    1800,
    1800
@@ -78,5 +78,45 @@
    768
   ],
   "has_hr": false
+ },
+ "val3": {
+  "title": "validation 3 \u2014 AOI_Busan_7_y0064_x0192",
+  "full": [
+   384,
+   384
+  ],
+  "overview": [
+   384,
+   384
+  ],
+  "origin": [
+   0,
+   0
+  ],
+  "extent": [
+   384,
+   384
+  ],
+  "has_hr": true
+ },
+ "val4": {
+  "title": "validation 4 \u2014 AOI_Barcelona_2_y0384_x0064",
+  "full": [
+   384,
+   384
+  ],
+  "overview": [
+   384,
+   384
+  ],
+  "origin": [
+   0,
+   0
+  ],
+  "extent": [
+   384,
+   384
+  ],
+  "has_hr": true
  }
 }
