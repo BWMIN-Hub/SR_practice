@@ -19,7 +19,7 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, f'{HERE}/lib')
 import iqa                                                       # noqa: E402
 
-SRC = '/c/work/nst_work_dirs/G2601-SAR-Filtering/tmp_files/sr_data/V2/train/HR'
+SRC = '/c/work/nst_work_dirs/G2601-SAR-Filtering/tmp_files/sr_data/PAIR_EXTRA/train/HR'
 PATCH = 96
 
 
@@ -35,7 +35,7 @@ def main():
     from sklearn.svm import SVR
     out = f'{HERE}/results/iqa'
     os.makedirs(out, exist_ok=True)
-    files = sorted(f for f in os.listdir(SRC) if f.endswith('_S0050.png'))
+    files = sorted(f for f in os.listdir(SRC) if f.endswith('_S0010.png'))
     rng = np.random.default_rng(0)
     pick = rng.choice(len(files), 120, replace=False)
 
