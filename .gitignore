@@ -8,6 +8,7 @@ results/*
 !results/comparison/
 !results/pairs/
 !results/iqa/
+!results/sr3/
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
