@@ -201,3 +201,59 @@ def evaluate(sr, hr=None, scale=3, path=None):
     out['brisque'] = brisque(sr, path=path)
     out['piqe'] = piqe(sr)
     return out
+
+
+# ── 보여주기 ─────────────────────────────────────────────────────────
+def report(items, metrics=None, crop=None, title='', figsize_w=2.0):
+    """영상과 그 점수를 한 줄에 나란히 놓는다.
+
+    items   : [(이름, 영상, {지표: 값}), ...]
+    crop    : (x, y, size) 로 확대해 볼 자리. 없으면 가운데
+    색은 그 지표 안에서의 순위다 — 초록이 좋고 붉은 쪽이 나쁘다.
+    글자는 모두 영문이다. Colab 기본 폰트에 한글이 없어서다.
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import LinearSegmentedColormap
+
+    ks = metrics or [k for k in ALL if k in items[0][2]]
+    cmap = LinearSegmentedColormap.from_list('gr', ['#2e8b57', '#f0e68c', '#c0504d'])
+    n = len(items)
+    fig, ax = plt.subplots(n, 1 + len(ks), squeeze=False,
+                           figsize=(figsize_w * (1 + len(ks)), 1.28 * n),
+                           gridspec_kw=dict(width_ratios=[1.5] + [1] * len(ks),
+                                            wspace=.06, hspace=.06))
+    # 지표마다 순위를 매겨 색을 정한다
+    rank = {}
+    for k in ks:
+        v = [it[2][k] for it in items]
+        order = sorted(range(n), key=lambda i: v[i], reverse=(BETTER[k] == 'high'))
+        for pos, i in enumerate(order):
+            rank[(i, k)] = pos / max(n - 1, 1)
+
+    for i, (name, img, vals) in enumerate(items):
+        a = ax[i][0]
+        if crop:
+            x, y, s = crop
+            img = img[y:y + s, x:x + s]
+        a.imshow(img, interpolation='nearest')
+        a.set_xticks([]); a.set_yticks([])
+        a.set_ylabel(name, fontsize=11, rotation=0, ha='right', va='center',
+                     labelpad=8)
+        for j, k in enumerate(ks, start=1):
+            b = ax[i][j]
+            b.set_facecolor(cmap(rank[(i, k)]))
+            b.text(.5, .5, f'{vals[k]:.3f}' if vals[k] < 10 else f'{vals[k]:.2f}',
+                   ha='center', va='center', fontsize=13, color='white',
+                   weight='bold', transform=b.transAxes)
+            b.set_xticks([]); b.set_yticks([])
+            if i == 0:
+                arrow = '↑' if BETTER[k] == 'high' else '↓'
+                b.set_title(f'{k.upper()} {arrow}', fontsize=12, pad=8)
+    ax[0][0].set_title('result' + (f'  (zoom {crop[2]}px)' if crop else ''),
+                       fontsize=12, pad=8)
+    if title:
+        fig.suptitle(title, fontsize=13, y=1.0)
+    plt.show()
+
+
+__all__ += ['report', 'features36', 'mscn']
