@@ -39,46 +39,6 @@
   ],
   "has_hr": true
  },
- "test1": {
-  "title": "test 1 (Incheon) \u2014 no target",
-  "full": [
-   1800,
-   1800
-  ],
-  "overview": [
-   800,
-   800
-  ],
-  "origin": [
-   516,
-   516
-  ],
-  "extent": [
-   768,
-   768
-  ],
-  "has_hr": false
- },
- "test2": {
-  "title": "test 2 (Incheon) \u2014 no target",
-  "full": [
-   1800,
-   1800
-  ],
-  "overview": [
-   800,
-   800
-  ],
-  "origin": [
-   516,
-   516
-  ],
-  "extent": [
-   768,
-   768
-  ],
-  "has_hr": false
- },
  "val3": {
   "title": "validation 3 \u2014 AOI_Busan_7_y0064_x0192",
   "full": [
@@ -118,5 +78,45 @@
    384
   ],
   "has_hr": true
+ },
+ "test1": {
+  "title": "test 1 (Incheon) \u2014 no target",
+  "full": [
+   1800,
+   1800
+  ],
+  "overview": [
+   800,
+   800
+  ],
+  "origin": [
+   516,
+   516
+  ],
+  "extent": [
+   768,
+   768
+  ],
+  "has_hr": false
+ },
+ "test2": {
+  "title": "test 2 (Incheon) \u2014 no target",
+  "full": [
+   1800,
+   1800
+  ],
+  "overview": [
+   800,
+   800
+  ],
+  "origin": [
+   516,
+   516
+  ],
+  "extent": [
+   768,
+   768
+  ],
+  "has_hr": false
  }
 }
