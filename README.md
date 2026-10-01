@@ -15,6 +15,7 @@
 | [`07_hat_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/07_hat_x3.ipynb) | HAT — Transformer 확장 | 선택 |
 | [`09_comparison`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/09_comparison.ipynb) | 일곱 모델 한자리 비교 (GPU 불필요) | 불필요 |
 | [`10_pair_strategies`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/10_pair_strategies.ipynb) | LR/HR 쌍 구축 전략 4가지 비교 (GPU 불필요) | 불필요 |
+| [`12_stretch_windows`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/12_stretch_windows.ipynb) | 12-bit → 8-bit 변환 창 고르기 4가지 경우 (GPU 불필요) | 불필요 |
 
 번호가 곧 배우는 순서이자 모델이 나온 순서다 (SRCNN 2014 → HAT 2023).
 
