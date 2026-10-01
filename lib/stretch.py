@@ -5,7 +5,7 @@ One helper so the notebook cells stay short.
 import matplotlib.pyplot as plt
 import numpy as np
 
-RULE = (150.0, 800.0)
+RULE = (150.0, 800.0)      # ('rule',) 로 쓸 때의 기본값
 C_WIN = ['#8e44ad', '#2b6cb0', '#2e8b57']
 C_TILE, C_CLOUD, C_CUT = '#9fb6cc', '#e8c33a', (1.0, 0.12, 0.12)
 
@@ -19,7 +19,7 @@ def load(path):
 
 
 def windows(pool, specs):
-    """specs: ('pct', lo, hi) or ('rule',)  ->  [(label, (lo, hi) per band), ...]
+    """specs: ('pct', lo, hi) or ('rule', lo, hi)  ->  [(label, (lo, hi) per band), ...]
 
     pool is (N, 3) or (H, W, 3): the window is found for each band separately,
     which is what real tools do and what keeps the colour intact.
@@ -28,8 +28,8 @@ def windows(pool, specs):
     out = []
     for s in specs:
         if s[0] == 'rule':
-            lo = np.full(3, RULE[0]); hi = np.full(3, RULE[1])
-            out.append((f'rule {RULE[0]:.0f} - {RULE[1]:.0f}', (lo, hi)))
+            a, b = (s[1], s[2]) if len(s) > 2 else RULE
+            out.append((f'rule {a:.0f} - {b:.0f}', (np.full(3, a), np.full(3, b))))
         else:
             lo = np.percentile(pool, s[1], axis=0)
             hi = np.percentile(pool, s[2], axis=0)
