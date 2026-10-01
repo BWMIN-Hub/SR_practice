@@ -31,7 +31,12 @@ def windows(pool, specs):
 
 
 def show(tile, wins, cloud=None, xmax=1000, size=4.6):
-    """Top: the tile under each window, cut pixels in red.  Bottom: the histogram."""
+    """Top: the tile under each window, cut pixels in red.  Bottom: the histogram.
+
+    Everything is done on one channel, so the picture, the cut mask and the
+    histogram all refer to the same numbers.  (A single window applied to three
+    bands at once distorts colour once the window gets narrow.)
+    """
     lum = tile.mean(axis=2)
     fig = plt.figure(figsize=(size * len(wins), size * 1.75))
     gs = fig.add_gridspec(2, len(wins), height_ratios=[1.55, 1.0], hspace=0.22,
@@ -39,7 +44,8 @@ def show(tile, wins, cloud=None, xmax=1000, size=4.6):
 
     for i, ((lab, (lo, hi)), col) in enumerate(zip(wins, C_WIN)):
         ax = fig.add_subplot(gs[0, i])
-        img = np.clip((tile - lo) / (hi - lo), 0, 1)
+        g = np.clip((lum - lo) / (hi - lo), 0, 1)
+        img = np.dstack([g, g, g])
         img[(lum <= lo) | (lum >= hi)] = C_CUT
         ax.imshow(img)
         ax.set_xticks([]); ax.set_yticks([]); ax.set_box_aspect(1)
