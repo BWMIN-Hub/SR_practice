@@ -11,7 +11,7 @@ import tifffile
 from matplotlib.patches import Rectangle
 
 __all__ = ['info', 'show_size', 'show_bands', 'show_dtype', 'show_crs', 'show_pixel',
-           'stats', 'preview', 'np', 'plt']
+           'stats', 'preview', 'meta', 'read', 'np', 'plt']
 
 C_LINE, C_FILL, C_MARK = '#2b6cb0', '#dce6f2', '#c0392b'
 BAND_HINT = {4: ['B1  red', 'B2  green', 'B3  blue', 'B4  near infrared'],
@@ -53,6 +53,11 @@ def meta(path):
                 name=names[0] if names else '-',
                 units='metre' if kv.get(3076) == 9001 else '-',
                 nodata=float(g[42113]) if g[42113] else None)
+
+
+def read(path):
+    """The pixels, as (band, row, col).  Cached, so repeated calls are free."""
+    return _load(path)[0]
 
 
 def _names(n):
