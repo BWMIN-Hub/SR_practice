@@ -4,6 +4,7 @@
     check_type    what type are the numbers?
     check_size    how big is it?
     check_bands   how are the bands arranged?
+    check_order   what a guessed band order looks like
 
 The GeoTIFF reader is the one from the intake page, which uses rasterio.
 """
@@ -15,7 +16,8 @@ from matplotlib.patches import Rectangle
 
 from intake import _st, meta, read
 
-__all__ = ['check_read', 'check_type', 'check_size', 'check_bands', 'np', 'plt']
+__all__ = ['check_read', 'check_type', 'check_size', 'check_bands',
+           'check_order', 'np', 'plt']
 
 C_IN, C_BAD, C_OK = '#2b6cb0', '#c0392b', '#2e8b57'
 NAMES = {4: ['B1  red', 'B2  green', 'B3  blue', 'B4  near infrared'],
@@ -34,25 +36,42 @@ def _names(n):
 
 # --------------------------------------------------------------- read
 def check_read(path):
-    """Opening the file is not the same as reading it correctly."""
+    """Take bands 1, 2, 3 and put them on screen.  Does an image come out?"""
     a = _small(path)
     m = meta(path)
-    raw = np.clip(a[:3] / np.iinfo(m['dtype']).max, 0, 1).transpose(1, 2, 0)
+    top = np.iinfo(m['dtype']).max
+    asis = np.clip(a[:3] / top, 0, 1).transpose(1, 2, 0)
     good = _st(a[:3]).transpose(1, 2, 0)
-    swapped = good[:, :, ::-1]
 
-    fig, axes = plt.subplots(1, 3, figsize=(15.6, 5.8), layout='constrained')
-    for ax, img, t, col in ((axes[0], raw, '1.  raw values', C_BAD),
-                            (axes[1], good, '2.  stretched', C_OK),
-                            (axes[2], swapped, '3.  bands reversed', C_BAD)):
+    fig, axes = plt.subplots(1, 2, figsize=(11.2, 6.0), layout='constrained')
+    for ax, img, t, lab, col in (
+            (axes[0], asis, '1.  as read', f'drawn on 0 - {top:,}', C_BAD),
+            (axes[1], good, '2.  rescaled', f'drawn on {a[:3].min():.0f} - '
+                                            f'{a[:3].max():.0f}', C_OK)):
         ax.imshow(img)
         ax.set_xticks([]); ax.set_yticks([]); ax.set_box_aspect(1)
-        ax.set_title(t, fontsize=21, pad=12, loc='left')
+        ax.set_title(t, fontsize=22, pad=12, loc='left')
+        ax.set_xlabel(lab, fontsize=19, color=col)
         for sp in ax.spines.values():
             sp.set(color=col, linewidth=3.0)
-    axes[0].set_xlabel(f'0 - {np.iinfo(m["dtype"]).max:,}', fontsize=18, color=C_BAD)
-    axes[1].set_xlabel(f'{a[:3].min():.0f} - {a[:3].max():.0f}', fontsize=18, color=C_OK)
-    axes[2].set_xlabel('B3 B2 B1', fontsize=18, color=C_BAD)
+    plt.show()
+
+
+def check_order(path):
+    """The same three bands, taken in both orders."""
+    a = _small(path)
+    good = _st(a[:3]).transpose(1, 2, 0)
+
+    fig, axes = plt.subplots(1, 2, figsize=(11.2, 6.0), layout='constrained')
+    for ax, img, t, lab, col in (
+            (axes[0], good, '1.  B1 B2 B3', 'red, green, blue', C_OK),
+            (axes[1], good[:, :, ::-1], '2.  B3 B2 B1', 'reversed', C_BAD)):
+        ax.imshow(img)
+        ax.set_xticks([]); ax.set_yticks([]); ax.set_box_aspect(1)
+        ax.set_title(t, fontsize=22, pad=12, loc='left')
+        ax.set_xlabel(lab, fontsize=19, color=col)
+        for sp in ax.spines.values():
+            sp.set(color=col, linewidth=3.0)
     plt.show()
 
 
