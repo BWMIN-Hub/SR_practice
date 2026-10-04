@@ -36,24 +36,14 @@ def _names(n):
 
 # --------------------------------------------------------------- read
 def check_read(path):
-    """Take bands 1, 2, 3 and put them on screen.  Does an image come out?"""
+    """Take bands 1, 2, 3 and put them on screen."""
     a = _small(path)
-    m = meta(path)
-    top = np.iinfo(m['dtype']).max
-    asis = np.clip(a[:3] / top, 0, 1).transpose(1, 2, 0)
-    good = _st(a[:3]).transpose(1, 2, 0)
-
-    fig, axes = plt.subplots(1, 2, figsize=(11.2, 6.0), layout='constrained')
-    for ax, img, t, lab, col in (
-            (axes[0], asis, '1.  as read', f'drawn on 0 - {top:,}', C_BAD),
-            (axes[1], good, '2.  rescaled', f'drawn on {a[:3].min():.0f} - '
-                                            f'{a[:3].max():.0f}', C_OK)):
-        ax.imshow(img)
-        ax.set_xticks([]); ax.set_yticks([]); ax.set_box_aspect(1)
-        ax.set_title(t, fontsize=22, pad=12, loc='left')
-        ax.set_xlabel(lab, fontsize=19, color=col)
-        for sp in ax.spines.values():
-            sp.set(color=col, linewidth=3.0)
+    fig, ax = plt.subplots(figsize=(7.2, 7.2), layout='constrained')
+    ax.imshow(_st(a[:3]).transpose(1, 2, 0))
+    ax.set_xticks([]); ax.set_yticks([]); ax.set_box_aspect(1)
+    ax.set_title('1.  B1 B2 B3', fontsize=22, pad=12, loc='left')
+    for sp in ax.spines.values():
+        sp.set(color=C_OK, linewidth=3.0)
     plt.show()
 
 
