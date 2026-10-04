@@ -20,6 +20,7 @@
 | [`14_inference`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/14_inference.ipynb) | EDSR ×2 추론 — 타일 · 겹침 · 배치 · 정밀도 · OOM · 크기 불일치 | 필요 |
 | [`15_sr_output_check`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/15_sr_output_check.ipynb) | SR 결과 검수 3단계 — 구조 · 기하 · 방사 (GPU 불필요) | 불필요 |
 | [`16_read_properly`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/16_read_properly.ipynb) | 영상 제대로 읽기 — 읽기 · 자료형 · 크기 (GPU 불필요) | 불필요 |
+| [`17_image_content`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/17_image_content.ipynb) | 영상 들여다보기 — 분포 · 밴드 구성 · 구름과 선명도 (GPU 불필요) | 불필요 |
 
 번호가 곧 배우는 순서이자 모델이 나온 순서다 (SRCNN 2014 → HAT 2023).
 
