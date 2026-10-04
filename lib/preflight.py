@@ -1,20 +1,25 @@
 """Checks to run before launching an SR job, so it does not fail an hour in.
 
     gpu_state        what card is here, and how much of it is free
-    budget           measure cost per pixel, then say what will fit
-    to_8bit          put a 12-bit scene into the range the model was trained on
-    show_conversion  what happens when that step is skipped
+    to_bits          put a 12-bit scene into an 8-bit or 16-bit range
+    show_inputs      the original and both conversions, as histograms
+    show_patches     where the tiles sit on the scene, and how far they overlap
     save_sr          write the result back with the input's georeferencing
+
+    budget / show_budget / show_conversion are kept for reference — they measure
+    the memory cost per pixel and show what happens when the conversion is skipped.
 """
 import numpy as np
 import matplotlib.pyplot as plt
 import rasterio
 import torch
+from matplotlib.patches import Rectangle
 
 from infer import Config, plan, replace, sr_tiled
 
-__all__ = ['gpu_state', 'measure', 'budget', 'show_budget', 'to_8bit',
-           'show_conversion', 'save_sr', 'np', 'plt', 'torch']
+__all__ = ['gpu_state', 'to_bits', 'to_8bit', 'show_inputs', 'show_patches',
+           'save_sr', 'measure', 'budget', 'show_budget', 'show_conversion',
+           'np', 'plt', 'torch']
 
 C_OK, C_BAD, C_IN = '#2e8b57', '#c0392b', '#2b6cb0'
 
@@ -112,6 +117,75 @@ def show_budget(img, net, cfg, margin=0.85):
 
 
 # --------------------------------------------------------------- Q2
+def to_bits(path, bits=8, lo=2.0, hi=99.5, bands=(1, 2, 3)):
+    """Stretch the window [lo, hi] onto the full range of `bits`, and return the
+    window too — the result cannot be undone without it."""
+    with rasterio.open(path) as d:
+        a = d.read(bands).astype(np.float32)
+    w_lo = np.percentile(a, lo, axis=(1, 2))[:, None, None]
+    w_hi = np.percentile(a, hi, axis=(1, 2))[:, None, None]
+    top = 2 ** bits - 1
+    out = (np.clip((a - w_lo) / (w_hi - w_lo), 0, 1) * top).round()
+    dt = np.uint8 if bits <= 8 else np.uint16
+    return np.transpose(out.astype(dt), (1, 2, 0)), (w_lo.ravel(), w_hi.ravel())
+
+
+def show_inputs(path, lo=2.0, hi=99.5, bins=240):
+    """The original values and the two conversions, side by side."""
+    with rasterio.open(path) as d:
+        raw = d.read((1, 2, 3)).astype(np.float32)
+    a16, _ = to_bits(path, 16, lo, hi)
+    a8, _ = to_bits(path, 8, lo, hi)
+    sets = [('1.  original', raw, float(raw.max())),
+            ('2.  16-bit', np.transpose(a16, (2, 0, 1)).astype(np.float32), 65535.0),
+            ('3.  8-bit', np.transpose(a8, (2, 0, 1)).astype(np.float32), 255.0)]
+
+    fig, axes = plt.subplots(1, 3, figsize=(16.5, 5.2), layout='constrained')
+    for ax, (t, v, top) in zip(axes, sets):
+        for i, col in enumerate(('#c0392b', '#2e8b57', '#2b6cb0')):
+            ax.hist(v[i].ravel(), bins=np.linspace(0, top, bins), histtype='step',
+                    lw=2.2, color=col, weights=np.full(v[i].size, 1.0 / v[i].size))
+        ax.set_yscale('log'); ax.set_yticks([]); ax.set_xlim(0, top)
+        ax.tick_params(labelsize=14)
+        ax.set_title(t, fontsize=21, pad=12, loc='left')
+        ax.set_xlabel(f'pixel value     0 - {top:,.0f}', fontsize=18)
+        for sp in ('top', 'right', 'left'):
+            ax.spines[sp].set_visible(False)
+    plt.show()
+
+
+def show_patches(path, cfg, lo=2.0, hi=99.5, which=(1, 1)):
+    """Solid blue is what each tile keeps.  Dashed orange is what one tile reads."""
+    from infer import plan
+    img, _ = to_bits(path, 8, lo, hi)
+    h, w = img.shape[:2]
+    p = plan(h, w, cfg)
+
+    fig, ax = plt.subplots(figsize=(8.6, 8.6), layout='constrained')
+    ax.imshow(img)
+    for iy in range(p['ny']):
+        for ix in range(p['nx']):
+            ax.add_patch(Rectangle((ix * cfg.tile, iy * cfg.tile), cfg.tile, cfg.tile,
+                                   fc='none', ec='#2b6cb0', lw=2.0))
+    jy, jx = which
+    x0, y0 = jx * cfg.tile - cfg.overlap, jy * cfg.tile - cfg.overlap
+    ax.add_patch(Rectangle((x0, y0), cfg.read, cfg.read, fc='#f0a63a', alpha=0.25,
+                           ec='#b06b12', lw=3.0, ls='--'))
+    ax.add_patch(Rectangle((jx * cfg.tile, jy * cfg.tile), cfg.tile, cfg.tile,
+                           fc='none', ec='#b06b12', lw=3.0))
+    m = cfg.overlap * 1.2
+    ax.set_xlim(-m, w + m); ax.set_ylim(h + m, -m)
+    ax.set_xticks([]); ax.set_yticks([]); ax.set_aspect('equal')
+    for sp in ax.spines.values():
+        sp.set_visible(False)
+    ax.set_title(f'1.  tile {cfg.tile},  overlap {cfg.overlap}', fontsize=22,
+                 pad=12, loc='left')
+    ax.set_xlabel(f'{p["nx"]} x {p["ny"]} = {p["tiles"]} tiles     '
+                  f'each reads {cfg.read} px     '
+                  f'+{100 * p["redundancy"]:.0f}% pixels', fontsize=18)
+    plt.show()
+
+
 def to_8bit(path, lo=2.0, hi=99.5, bands=(1, 2, 3)):
     """12-bit scene -> the 0-255 range the model was trained on.  The window is
     returned too, because the result cannot be undone without it."""
