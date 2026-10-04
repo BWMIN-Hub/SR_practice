@@ -48,35 +48,21 @@ def show_distribution(path, bits=12, bins=260):
     names = _names(len(a))
     edges = np.linspace(0, ceil, bins)
 
-    fig, axes = plt.subplots(1, 2, figsize=(15.6, 5.6), layout='constrained')
-    ax = axes[0]
+    fig, ax = plt.subplots(figsize=(10.4, 5.8), layout='constrained')
     for i, v in enumerate(a):
         ax.hist(v.ravel(), bins=edges, histtype='step', lw=2.4,
                 weights=np.full(v.size, 1.0 / v.size), label=names[i])
-    p = np.percentile(a, PCTS)
-    for x in p:                      # 값은 오른쪽 누적 곡선에만 적는다 — 여기선 겹친다
+    for q, x in zip(PCTS, np.percentile(a, PCTS)):
         ax.axvline(x, color='#666', ls='--', lw=1.6)
+        ax.text(x, 0.98, f'p{q} = {x:.0f}', transform=ax.get_xaxis_transform(),
+                rotation=90, ha='right', va='top', fontsize=15, color='#444')
     ax.set_yscale('log'); ax.set_yticks([]); ax.set_xlim(0, ceil)
     ax.tick_params(labelsize=15)
     ax.set_xlabel('pixel value', fontsize=18)
     ax.legend(fontsize=15, frameon=False)
     ax.set_title('1.  where the values sit', fontsize=21, pad=12, loc='left')
-
-    ax = axes[1]
-    v = np.sort(a.ravel())
-    y = np.linspace(0, 100, len(v))
-    ax.plot(v, y, lw=3.0, color=C_IN)
-    for q, x in zip(PCTS, p):
-        ax.plot([x, x, 0], [0, q, q], color='#666', ls='--', lw=1.6)
-        ax.text(x, q, f'   p{q} = {x:.0f}', fontsize=16, va='center', color='#444')
-    ax.set_xlim(0, ceil); ax.set_ylim(0, 102)
-    ax.tick_params(labelsize=15)
-    ax.set_xlabel('pixel value', fontsize=18)
-    ax.set_ylabel('% of pixels below', fontsize=18)
-    ax.set_title('2.  how fast it gets there', fontsize=21, pad=12, loc='left')
-    for ax in axes:
-        for sp in ('top', 'right'):
-            ax.spines[sp].set_visible(False)
+    for sp in ('top', 'right', 'left'):
+        ax.spines[sp].set_visible(False)
     plt.show()
 
 
