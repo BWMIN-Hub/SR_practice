@@ -22,10 +22,12 @@ C_OK, C_BAD, C_IN = '#2e8b57', '#c0392b', '#2b6cb0'
 # --------------------------------------------------------------- Q1
 def gpu_state(device=None):
     """Name, memory, and whether fp16 will actually be fast here."""
-    if not torch.cuda.is_available():
-        print('no GPU — everything below will run on the CPU, slowly')
+    device = device or ('cuda:0' if torch.cuda.is_available() else 'cpu')
+    if not str(device).startswith('cuda') or not torch.cuda.is_available():
+        print('no GPU in this runtime — everything below would run on the CPU, and')
+        print('EDSR on a CPU takes minutes per scene rather than seconds.')
+        print('Runtime > Change runtime type > T4 GPU, then run the cells again.')
         return
-    device = device or 'cuda:0'
     i = torch.device(device).index or 0
     p = torch.cuda.get_device_properties(i)
     free, total = torch.cuda.mem_get_info(i)
@@ -34,6 +36,14 @@ def gpu_state(device=None):
     print(f'compute    {p.major}.{p.minor}'
           f'   tensor cores {"yes" if p.major >= 7 else "no"}')
     print(f'torch      {torch.__version__}')
+
+
+def _no_gpu(cfg):
+    if cfg.device.startswith('cuda'):
+        return False
+    print('no GPU in this runtime — there is no memory limit to plan around.')
+    print('Runtime > Change runtime type > T4 GPU, then run the cells again.')
+    return True
 
 
 def measure(img, net, cfg, tiles=(128, 256)):
@@ -52,8 +62,7 @@ def measure(img, net, cfg, tiles=(128, 256)):
 
 def budget(img, net, cfg, margin=0.85):
     """Turn that number into the configs that will and will not fit."""
-    if not cfg.device.startswith('cuda'):
-        print('no GPU — there is no memory limit to plan around here')
+    if _no_gpu(cfg):
         return None, None
     per, _ = measure(img, net, cfg)
     i = torch.device(cfg.device).index or 0
@@ -73,6 +82,8 @@ def budget(img, net, cfg, margin=0.85):
 
 def show_budget(img, net, cfg, margin=0.85):
     """The measured line, and where this card stops."""
+    if _no_gpu(cfg):
+        return
     per, pts = measure(img, net, cfg)
     i = torch.device(cfg.device).index or 0
     free, total = (v / 2 ** 30 for v in torch.cuda.mem_get_info(i))

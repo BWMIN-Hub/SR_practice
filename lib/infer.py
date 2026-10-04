@@ -362,9 +362,10 @@ def try_run(img, net, cfg):
         t0 = time.time()
         out = sr_tiled(img, net, cfg)
         p = plan(*img.shape[:2], cfg)
+        vram = (f'{torch.cuda.max_memory_allocated(cfg.device) / 2 ** 30:.2f} GiB'
+                if cfg.device.startswith('cuda') else 'cpu')
         print(f'ok    {p["px_per_call"] / 1e6:.2f} M px per call   '
-              f'{time.time() - t0:.2f} s   '
-              f'{torch.cuda.max_memory_allocated(cfg.device) / 2 ** 30:.2f} GiB')
+              f'{time.time() - t0:.2f} s   {vram}')
         return out
     except torch.cuda.OutOfMemoryError as e:
         torch.cuda.empty_cache()
@@ -397,6 +398,10 @@ def show_result(lr, sr, cfg, center=None, size=120):
 
 def memory_law(img, net, cfg, tiles=(128, 256, 512), batches=(1, 4, 8, 16)):
     """Peak memory against pixels per call, reached two different ways."""
+    if not cfg.device.startswith('cuda'):
+        print('no GPU in this runtime — there is no VRAM to measure.')
+        print('Runtime > Change runtime type > T4 GPU, then run the cells again.')
+        return []
     rows = []
     for t in tiles:
         rows.append(('tile', t, replace(cfg, tile=t, batch=4)))
@@ -417,6 +422,8 @@ def memory_law(img, net, cfg, tiles=(128, 256, 512), batches=(1, 4, 8, 16)):
 
 def show_memory_law(rows):
     """Both knobs land on the same line: memory follows pixels per call."""
+    if not rows:
+        return
     fig, ax = plt.subplots(figsize=(8.6, 6.0), layout='constrained')
     for kind, col, mk in (('tile', C_KEEP, 'o'), ('batch', C_READ, 's')):
         g = [r for r in rows if r['kind'] == kind]
