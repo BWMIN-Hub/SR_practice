@@ -21,6 +21,7 @@
 | [`15_sr_output_check`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/15_sr_output_check.ipynb) | SR 결과 검수 3단계 — 구조 · 기하 · 방사 (GPU 불필요) | 불필요 |
 | [`16_read_properly`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/16_read_properly.ipynb) | 영상 제대로 읽기 — 읽기 · 자료형 · 크기 (GPU 불필요) | 불필요 |
 | [`17_image_content`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/17_image_content.ipynb) | 영상 들여다보기 — 분포 · 밴드 구성 · 구름과 선명도 (GPU 불필요) | 불필요 |
+| [`18_preflight`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/18_preflight.ipynb) | 실행 전 점검 5가지 — GPU · 입력 변환 · 타일 · 정밀도 · 스크립트 | 필요 |
 
 번호가 곧 배우는 순서이자 모델이 나온 순서다 (SRCNN 2014 → HAT 2023).
 
