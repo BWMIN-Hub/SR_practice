@@ -1,9 +1,9 @@
 """Reading a satellite image properly — four questions, one answer each.
 
-    Q1  am I reading it correctly?
-    Q2  how are the bands arranged?
-    Q3  how big is it?
-    Q4  what type are the numbers?
+    check_read    am I reading it correctly?
+    check_type    what type are the numbers?
+    check_size    how big is it?
+    check_bands   how are the bands arranged?
 
 The GeoTIFF reader is the one from the intake page, which uses rasterio.
 """
@@ -15,7 +15,7 @@ from matplotlib.patches import Rectangle
 
 from intake import _st, meta, read
 
-__all__ = ['q1_read', 'q2_bands', 'q3_size', 'q4_type', 'np', 'plt']
+__all__ = ['check_read', 'check_type', 'check_size', 'check_bands', 'np', 'plt']
 
 C_IN, C_BAD, C_OK = '#2b6cb0', '#c0392b', '#2e8b57'
 NAMES = {4: ['B1  red', 'B2  green', 'B3  blue', 'B4  near infrared'],
@@ -32,8 +32,8 @@ def _names(n):
     return NAMES.get(n, [f'B{i}' for i in range(1, n + 1)])
 
 
-# --------------------------------------------------------------- Q1
-def q1_read(path):
+# --------------------------------------------------------------- read
+def check_read(path):
     """Opening the file is not the same as reading it correctly."""
     a = _small(path)
     m = meta(path)
@@ -56,8 +56,8 @@ def q1_read(path):
     plt.show()
 
 
-# --------------------------------------------------------------- Q2
-def q2_bands(path):
+# --------------------------------------------------------------- bands
+def check_bands(path):
     """Each band, then the two composites that prove which one is which."""
     a = _small(path)
     n = len(a)
@@ -79,8 +79,8 @@ def q2_bands(path):
     plt.show()
 
 
-# --------------------------------------------------------------- Q3
-def q3_size(path):
+# --------------------------------------------------------------- size
+def check_size(path):
     """Pixels, ground, and the two very different numbers for 'size'."""
     m = meta(path)
     w, h, c = m['width'], m['height'], m['count']
@@ -119,8 +119,8 @@ def q3_size(path):
     plt.show()
 
 
-# --------------------------------------------------------------- Q4
-def q4_type(path, bits=12):
+# --------------------------------------------------------------- type
+def check_type(path, bits=12):
     """The type says how big the box is, not how full it is."""
     a = read(path).astype(np.float32)
     m = meta(path)
