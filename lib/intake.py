@@ -1,14 +1,13 @@
 """Data intake check — read the header, check the statistics, look at the image.
 
-The file is a GeoTIFF, so everything the header holds sits in TIFF tags: pixel
-scale (33550), origin (33922), the projection keys (34735) and their names
-(34737).  tifffile reads those directly, which keeps this page free of installs.
-In real work you would reach for gdalinfo or rasterio instead.
+Reading is done with rasterio, which is GDAL with a friendlier interface.  Colab
+ships both, so nothing has to be installed.
 """
 import matplotlib.pyplot as plt
 import numpy as np
-import tifffile
+import rasterio
 from matplotlib.patches import Rectangle
+from rasterio.warp import transform as warp_transform
 
 __all__ = ['info', 'show_size', 'show_bands', 'show_dtype', 'show_crs', 'show_pixel',
            'stats', 'preview', 'meta', 'read', 'np', 'plt']
@@ -21,38 +20,22 @@ _CACHE = {}
 
 # --------------------------------------------------------------- reading
 def _load(path):
-    """Read the file once, keep it, and pull the GeoTIFF tags out of the header."""
+    """Read the file once and keep it — the pages below ask for it repeatedly."""
     if path not in _CACHE:
-        with tifffile.TiffFile(path) as t:
-            p = t.pages[0]
-            a = p.asarray()
-            g = {c: (p.tags[c].value if p.tags.get(c) else None)
-                 for c in (33550, 33922, 34735, 34737, 42113)}
-        a = a[:, :, None] if a.ndim == 2 else a
-        _CACHE[path] = (np.ascontiguousarray(a.transpose(2, 0, 1)), g)
+        with rasterio.open(path) as d:
+            _CACHE[path] = (d.read(), dict(
+                count=d.count, height=d.height, width=d.width, dtype=d.dtypes[0],
+                res=(abs(d.res[0]), abs(d.res[1])), bounds=tuple(d.bounds),
+                epsg=d.crs.to_epsg() if d.crs else None,
+                name=d.crs.to_wkt().split('"')[1] if d.crs else '-',
+                units=d.crs.linear_units if d.crs else '-',
+                nodata=d.nodata, crs=d.crs))
     return _CACHE[path]
 
 
 def meta(path):
-    a, g = _load(path)
-    scale = g[33550] or (1.0, 1.0, 0.0)
-    tie = g[33922] or (0.0,) * 6
-    keys = g[34735] or ()
-    kv = {}
-    for i in range(4, len(keys) - 3, 4):            # 4개 헤더 뒤로 (키, 위치, 개수, 값)
-        kid, loc, _, val = keys[i:i + 4]
-        if loc == 0:
-            kv[kid] = val
-    names = [s for s in (g[34737] or '').split('|') if s]
-    left, top = float(tie[3]), float(tie[4])
-    h, w = a.shape[1], a.shape[2]
-    return dict(count=a.shape[0], height=h, width=w, dtype=str(a.dtype),
-                res=(float(scale[0]), float(scale[1])),
-                bounds=(left, top - h * scale[1], left + w * scale[0], top),
-                epsg=kv.get(3072) or kv.get(2048),
-                name=names[0] if names else '-',
-                units='metre' if kv.get(3076) == 9001 else '-',
-                nodata=float(g[42113]) if g[42113] else None)
+    """Size, bands, dtype, CRS, pixel size, origin — straight from the header."""
+    return _load(path)[1]
 
 
 def read(path):
@@ -77,34 +60,6 @@ def _thumb(path, bands=(0, 1, 2), size=600):
 
 def _m(v):
     return f'{v:,.0f} m' if v < 1000 else f'{v:,.0f} m   ({v / 1000:.2f} km)'
-
-
-def _utm_to_ll(E, N, zone, north=True):
-    """Inverse transverse Mercator on WGS 84 — matches a full PROJ transform to
-    well under a millimetre, and needs nothing installed."""
-    a, f = 6378137.0, 1 / 298.257223563
-    e2 = f * (2 - f); ep2 = e2 / (1 - e2); k0 = 0.9996
-    e1 = (1 - np.sqrt(1 - e2)) / (1 + np.sqrt(1 - e2))
-    x = np.asarray(E, float) - 500000.0
-    y = np.asarray(N, float) - (0.0 if north else 1e7)
-    mu = (y / k0) / (a * (1 - e2 / 4 - 3 * e2 ** 2 / 64 - 5 * e2 ** 3 / 256))
-    p1 = (mu + (3 * e1 / 2 - 27 * e1 ** 3 / 32) * np.sin(2 * mu)
-          + (21 * e1 ** 2 / 16 - 55 * e1 ** 4 / 32) * np.sin(4 * mu)
-          + (151 * e1 ** 3 / 96) * np.sin(6 * mu)
-          + (1097 * e1 ** 4 / 512) * np.sin(8 * mu))
-    C1 = ep2 * np.cos(p1) ** 2; T1 = np.tan(p1) ** 2
-    N1 = a / np.sqrt(1 - e2 * np.sin(p1) ** 2)
-    R1 = a * (1 - e2) / (1 - e2 * np.sin(p1) ** 2) ** 1.5
-    D = x / (N1 * k0)
-    lat = p1 - (N1 * np.tan(p1) / R1) * (
-        D ** 2 / 2 - (5 + 3 * T1 + 10 * C1 - 4 * C1 ** 2 - 9 * ep2) * D ** 4 / 24
-        + (61 + 90 * T1 + 298 * C1 + 45 * T1 ** 2 - 252 * ep2 - 3 * C1 ** 2)
-        * D ** 6 / 720)
-    lon = np.radians(zone * 6 - 183) + (
-        D - (1 + 2 * T1 + C1) * D ** 3 / 6
-        + (5 - 2 * C1 + 28 * T1 - 3 * C1 ** 2 + 8 * ep2 + 24 * T1 ** 2)
-        * D ** 5 / 120) / np.cos(p1)
-    return np.degrees(lon), np.degrees(lat)
 
 
 # --------------------------------------------------------------- 1. the header
@@ -219,11 +174,9 @@ def show_crs(path):
     left, bottom, right, top = m['bounds']
     xs = [left, right, right, left]
     ys = [top, top, bottom, bottom]
-    epsg = m['epsg'] or 0
-    utm = 32600 < epsg < 32761
+    utm = m['crs'] is not None
     if utm:
-        zone = epsg % 100
-        lon, lat = _utm_to_ll(xs, ys, zone, north=epsg < 32700)
+        lon, lat = warp_transform(m['crs'], 'EPSG:4326', xs, ys)
 
     fig, ax = plt.subplots(figsize=(9.6, 7.6), layout='constrained')
     ax.add_patch(Rectangle((left, bottom), right - left, top - bottom,

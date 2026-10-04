@@ -5,7 +5,7 @@
     Q3  how big is it?
     Q4  what type are the numbers?
 
-The GeoTIFF reader is the one from the intake page, so nothing has to be installed.
+The GeoTIFF reader is the one from the intake page, which uses rasterio.
 """
 import os
 

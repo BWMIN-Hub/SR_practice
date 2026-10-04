@@ -4,7 +4,7 @@
     2  geometry     CRS, pixel size, origin, footprint
     3  radiometry   mean, standard deviation, histogram shape
 
-The GeoTIFF reader is the one from the intake page, so no install is needed.
+The GeoTIFF reader is the one from the intake page, which uses rasterio.
 """
 import matplotlib.pyplot as plt
 import numpy as np
