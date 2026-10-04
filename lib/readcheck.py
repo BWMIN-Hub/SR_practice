@@ -131,36 +131,20 @@ def check_size(path):
 # --------------------------------------------------------------- type
 def check_type(path, bits=12):
     """The type says how big the box is, not how full it is."""
-    a = read(path).astype(np.float32)
+    a = read(path)
     m = meta(path)
     top = float(np.iinfo(m['dtype']).max)
-    ceil = 2 ** bits - 1
     lo, hi = float(a.min()), float(a.max())
 
-    fig, axes = plt.subplots(1, 2, figsize=(15.5, 5.2), layout='constrained',
-                             gridspec_kw=dict(width_ratios=[1, 1.2]))
-    ax = axes[0]
+    fig, ax = plt.subplots(figsize=(11.0, 3.8), layout='constrained')
     ax.add_patch(Rectangle((0, 0.3), top, 0.4, fc='#e9edf2', ec='#99a3af', lw=1.4))
     ax.add_patch(Rectangle((lo, 0.3), hi - lo, 0.4, fc=C_IN, ec='none'))
-    ax.text(top, 0.92, f'{m["dtype"]}   0 - {top:,.0f}', fontsize=17, ha='right')
-    ax.text(0, 0.16, f'actually   {lo:,.0f} - {hi:,.0f}', fontsize=17, color=C_IN)
-    ax.set_xlim(-top * 0.03, top * 1.05); ax.set_ylim(0.05, 1.05)
-    ax.set_yticks([]); ax.tick_params(labelsize=14)
-    ax.set_xlabel('pixel value', fontsize=18)
-    ax.set_title('1.  the box', fontsize=21, pad=12, loc='left')
-    for sp in ('top', 'right', 'left'):
-        ax.spines[sp].set_visible(False)
-
-    ax = axes[1]
-    for i, v in enumerate(a):
-        ax.hist(v.ravel(), bins=np.linspace(0, ceil, 260), histtype='step', lw=2.2,
-                weights=np.full(v.size, 1.0 / v.size), label=_names(len(a))[i])
-    ax.set_yscale('log'); ax.set_yticks([]); ax.set_xlim(0, ceil)
-    ax.tick_params(labelsize=14)
-    ax.set_xlabel('pixel value', fontsize=18)
-    ax.legend(fontsize=15, frameon=False)
-    ax.set_title(f'2.  what is inside   ({bits}-bit range)', fontsize=21, pad=12,
-                 loc='left')
+    ax.text(top, 0.92, f'{m["dtype"]}   0 - {top:,.0f}', fontsize=19, ha='right')
+    ax.text(0, 0.14, f'actually   {lo:,.0f} - {hi:,.0f}', fontsize=19, color=C_IN)
+    ax.set_xlim(-top * 0.03, top * 1.05); ax.set_ylim(0.02, 1.08)
+    ax.set_yticks([]); ax.tick_params(labelsize=15)
+    ax.set_xlabel('pixel value', fontsize=19)
+    ax.set_title('1.  the box', fontsize=22, pad=12, loc='left')
     for sp in ('top', 'right', 'left'):
         ax.spines[sp].set_visible(False)
     plt.show()
