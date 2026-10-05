@@ -20,10 +20,9 @@ REP = {
 }
 REPS = {
     'training': ['AOI_Barcelona_10_y0128_x0128', 'AOI_Busan_10_y0128_x0128'],
-    'validation': ['AOI_Paris_1_6_y0064_x0192',   # 파리
-                   'AOI_Seoul_14_y0256_x0128'],  # 서울
+    'validation': ['AOI_Paris_1_6_y0064_x0192', 'AOI_Seoul_14_y0256_x0128'],
 }
-TEST = 'incheon_600.png'                          # 인천, 실제 촬영본
+TEST = 'incheon_600.png'                          # a real capture, no target
 TESTS = ['incheon_600.png', 'incheon2_600.png']   # 같은 씬의 다른 두 구역
 SHAVE = 4                                         # 점수 잴 때 잘라낼 가장자리
 
@@ -183,7 +182,8 @@ def compare(upscale_fn, split='validation', plot=True, label='model', scale=3):
     print(f'{"":12s}{"PSNR":>10s}{"SSIM":>10s}')
     print(f'{"Bicubic":12s}{m[0]:10.2f}{m[1]:10.4f}')
     print(f'{label:12s}{m[2]:10.2f}{m[3]:10.4f}')
-    print(f'{"차이":12s}{m[2] - m[0]:+10.2f}{m[3] - m[1]:+10.4f}   ({len(rows)}장 평균)')
+    print(f'{"gain":12s}{m[2] - m[0]:+10.2f}{m[3] - m[1]:+10.4f}   '
+          f'(mean of {len(rows)})')
     if not plot:
         return rows
 
@@ -210,9 +210,9 @@ def compare(upscale_fn, split='validation', plot=True, label='model', scale=3):
 
 def show_data():
     """1. 데이터 — validation 2패치 + test 2구역을 한눈에."""
-    panels = [(f'validation {i+1} ({s.split("_")[1]})', *pair('validation', s))
+    panels = [(f'validation {i+1}', *pair('validation', s))
               for i, s in enumerate(REPS['validation'])]
-    panels += [(f'test {i+1} (Incheon)', load_test(i), None) for i in range(len(TESTS))]
+    panels += [(f'test {i+1}', load_test(i), None) for i in range(len(TESTS))]
     show(panels)
 
 
@@ -236,7 +236,7 @@ def show_results(upscale_fn, label='model', scale=3, center=None, size=None):
         zoom([('Original LR', nearest(lr, scale)), ('Bicubic', bicubic(lr, scale)),
               (label, upscale_fn(lr)), ('Target HR', hr)],
              loc=None if c else 'br', center=c, size=size,
-             title=f'validation {i + 1} — {stem}')
+             title=f'validation {i + 1}')
 
 
 def show_test(upscale_fn, label='model', scale=3, center=None, size=55):
@@ -253,4 +253,4 @@ def show_test(upscale_fn, label='model', scale=3, center=None, size=55):
         sr = upscale_fn(lr)
         zoom([('Original LR', nearest(lr, scale)), ('Bicubic', bic), (label, sr)],
              ref=bic, size=size, center=_per_patch(center, i),
-             title=f'test {i + 1} (Incheon) - no target')
+             title=f'test {i + 1} - no target')
