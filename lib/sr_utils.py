@@ -33,7 +33,7 @@ REPS = {
 # 확대해서 볼 자리. 패치마다 구조가 제일 빽빽한 곳을 미리 잡아 뒀다.
 VIS_CENTER = [(302, 62), (107, 307), (322, 322)]
 VIS_SIZE = 160          # 확대 창의 한 변 (결과 크기 기준). zoom 그림과 같은 크기다.
-TEST = 'incheon_600.png'                          # a real capture, no target
+TEST = 'incheon_600.png'                          # a real capture, no IKONOS image
 TESTS = ['incheon_600.png', 'incheon2_600.png']   # 같은 씬의 다른 두 구역
 SHAVE = 4                                         # 점수 잴 때 잘라낼 가장자리
 
@@ -52,7 +52,7 @@ def fetch(url, path):
 
 
 def pair(split, stem):
-    """(입력 LR, 정답 HR) 한 쌍."""
+    """(입력 LR, 같은 자리의 IKONOS 영상) 한 쌍."""
     hr = imageio.imread(fetch(f'{BASE}/dataset/{split}/HR/{stem}.png', f'{split}/{stem}.png'))
     lr = imageio.imread(fetch(f'{BASE}/dataset/{split}/LR_bicubic/X3/{stem}x3.png',
                               f'{split}/{stem}_lr.png'))
@@ -60,7 +60,7 @@ def pair(split, stem):
 
 
 def load_test(i=0):
-    """test 대표(인천) 입력. 정답은 없다. i 로 두 구역 중 하나를 고른다."""
+    """test 대표(인천) 입력. 비교할 IKONOS 영상이 없다. i 로 두 구역 중 하나를 고른다."""
     name = TESTS[i] if isinstance(i, int) else i
     return imageio.imread(fetch(f'{BASE}/dataset/test/{name}', f'test_{name}'))
 
@@ -88,17 +88,17 @@ def score(pred, gt):
 
 
 def show(items, title=''):
-    """items: [(이름, 입력, 정답 또는 None)] — 위에 입력, 아래에 정답."""
+    """items: [(이름, 입력, IKONOS 영상 또는 None)] — 위에 입력, 아래에 IKONOS."""
     fig, ax = plt.subplots(2, len(items), figsize=(3.3 * len(items), 7.0), squeeze=False)
     for c, (name, lo, hi) in enumerate(items):
         ax[0, c].imshow(lo)
         ax[0, c].set_title(f'{name}\ninput {lo.shape[0]}px', fontsize=9)
         if hi is None:
-            ax[1, c].text(.5, .5, 'no target', ha='center', va='center', color='#888')
+            ax[1, c].text(.5, .5, 'no IKONOS image', ha='center', va='center', color='#888')
             ax[1, c].set_facecolor('#f2f2f2')
         else:
             ax[1, c].imshow(hi)
-            ax[1, c].set_title(f'target {hi.shape[0]}px', fontsize=9)
+            ax[1, c].set_title(f'IKONOS {hi.shape[0]}px', fontsize=9)
         for r in (0, 1):
             ax[r, c].set_xticks([]); ax[r, c].set_yticks([])
     if title:
@@ -246,13 +246,13 @@ def show_results(upscale_fn, label='model', scale=3, center=None, size=None):
         hr = retarget(hr, lr, scale)
         c = _per_patch(center if center is not None else VIS_CENTER, i)
         zoom([('Original LR', nearest(lr, scale)), ('Bicubic', bicubic(lr, scale)),
-              (label, upscale_fn(lr)), ('Target HR', hr)],
+              (label, upscale_fn(lr)), ('IKONOS', hr)],
              loc=None if c else 'br', center=c, size=size or VIS_SIZE,
              title=f'validation {i + 1}')
 
 
 def show_test(upscale_fn, label='model', scale=3, center=None, size=55):
-    """6. 최종 테스트 — 인천 2구역 각각을 '전체 + 확대' 로. 정답이 없어 점수는 없다.
+    """6. 최종 테스트 — 인천 2구역 각각을 '전체 + 확대' 로. 비교할 IKONOS 영상이 없어 점수는 없다.
 
     center=(x, y) 로 확대 위치를 지정한다 (결과 크기 1800px 기준). 안 주면 자동.
     구역마다 다르게 하려면 center=[(x1, y1), (x2, y2)].
@@ -265,4 +265,4 @@ def show_test(upscale_fn, label='model', scale=3, center=None, size=55):
         sr = upscale_fn(lr)
         zoom([('Original LR', nearest(lr, scale)), ('Bicubic', bic), (label, sr)],
              ref=bic, size=size, center=_per_patch(center, i),
-             title=f'test {i + 1} - no target')
+             title=f'test {i + 1} - no IKONOS image')
