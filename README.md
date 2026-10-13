@@ -28,8 +28,8 @@
 모델 페이지는 전부 같은 순서다: **데이터 → 훈련 → 결과 → 평가 → 최종 테스트(인천)**.
 이론 설명은 노트북에 넣지 않는다.
 
-대표 패치는 각 1장으로 고정했다 — training은 Barcelona, validation은 **Paris**,
-test는 **Incheon**(실제 촬영본, 정답 없음).
+보여주는 패치는 고정했다 — training은 Barcelona, 결과를 볼 때는 실제 Sentinel-2
+3패치, 최종 테스트는 **Incheon**(실제 촬영본, 정답 없음).
 
 모델·손실·유틸은 `lib/` 에 있고 노트북은 import 만 한다.
 
@@ -39,24 +39,36 @@ test는 **Incheon**(실제 촬영본, 정답 없음).
 | `lib/sr_losses.py` | `get_loss('l1' / 'l2' / 'charbonnier')` |
 | `lib/sr_utils.py` | `pair` `load_test` `show` `zoom` `score` `compare` `bicubic` |
 
-## 가중치 두 벌
+## 가중치
 
-모델 페이지 7개는 각각 가중치를 두 벌 갖고 있다. 노트북의 `CKPT` 줄 하나로 고른다.
+모델 페이지 7개의 기본 가중치는 **의사라벨**로 학습한 `_misr9` 쪽이다.
+IKONOS 한 장을 확산 열화 모델로 9번 추론해 부화소 위상이 다른 스택을 만들고,
+그 9장을 MISR 로 합성해 목표를 만들었다. 노트북의 `CKPT` 줄 하나로 바꾼다.
 
-| 모델 | 기본 (IKONOS 목표) | 의사라벨 목표 |
+| 모델 | 기본 | 이전 (IKONOS 목표) |
 |---|---|---|
-| 01 SRCNN | `srcnn_x3.pth` | `srcnn_x3_misr9.pth` |
-| 02 VDSR | `vdsr_x3_30ep.pth` | `vdsr_x3_misr9.pth` |
-| 03 EDSR | `edsr_x3.pt` | `edsr_x3_misr9.pt` |
-| 04 SRGAN | `srgan_g_x3.pth` | `srgan_g_x3_misr9.pth` |
-| 05 ESRGAN | `esrgan_g_x3.pth` | `esrgan_g_x3_misr9.pth` |
-| 06 SwinIR | `swinir_x3.pth` | `swinir_x3_misr9.pth` |
-| 07 HAT | `hat_x3.pth` | `hat_x3_misr9.pth` |
+| 01 SRCNN | `srcnn_x3_misr9.pth` | `srcnn_x3.pth` |
+| 02 VDSR | `vdsr_x3_misr9.pth` | `vdsr_x3_30ep.pth` |
+| 03 EDSR | `edsr_x3_misr9.pt` | `edsr_x3.pt` |
+| 04 SRGAN | `srgan_g_x3_misr9.pth` | `srgan_g_x3.pth` |
+| 05 ESRGAN | `esrgan_g_x3_misr9.pth` | `esrgan_g_x3.pth` |
+| 06 SwinIR | `swinir_x3_misr9.pth` | `swinir_x3.pth` |
+| 07 HAT | `hat_x3_misr9.pth` | `hat_x3.pth` |
 
-`_misr9` 쪽은 IKONOS 가 아니라 **의사라벨**을 목표로 배운 것이다. IKONOS 한 장을
-확산 열화 모델로 9번 추론해 부화소 위상이 다른 스택을 만들고, 그 9장을 MISR 로
-합성해 얻은 목표다. IKONOS 기준 PSNR 은 내려가고 선명도는 올라간다 — 자세한
-숫자는 각 모델 폴더의 `README.md` 에 있다.
+IKONOS 를 정답으로 재면 PSNR 은 내려가고 선명도는 올라간다 — 목표가 IKONOS 가
+아니니 당연한 결과다. 숫자는 각 모델 폴더의 `README.md` 에 있다.
+
+## 보여주는 패치와 점수 재는 패치가 다르다
+
+**보여줄 때**는 `dataset/validation_real/` 3패치를 쓴다. 입력이 **실제
+Sentinel-2 관측본**이라 배포했을 때 실제로 보게 될 그림이다.
+
+**점수를 잴 때**는 `dataset/validation/` 10패치를 쓴다. 입력이 HR 에서 만든
+합성본이라 목표와 화소가 정확히 맞는다. 실제 Sentinel-2 는 IKONOS 와 촬영
+날짜가 달라 PSNR 이 모델 차이보다 날짜 차이를 더 크게 반영한다.
+
+둘의 입력 종류가 다르니 섞지 않는다. `show_data()` 와 `show_results()` 가
+앞의 것을, `compare()` 가 뒤의 것을 쓴다.
 
 ## 폴더 구성
 
@@ -64,7 +76,8 @@ test는 **Incheon**(실제 촬영본, 정답 없음).
 colab/
 ├── dataset/       실습에 쓰는 사진들
 │   ├── training/     연습문제 40쌍 (흐린 사진 + 정답 사진)
-│   ├── validation/   실전시험 10쌍 (배울 때 안 본 지역)
+│   ├── validation/   점수용 10쌍 (배울 때 안 본 지역, 입력은 합성본)
+│   ├── validation_real/ 결과를 보여줄 3쌍 (입력이 실제 Sentinel-2)
 │   └── test/         최종 테스트용 인천 사진 1장 (정답 없음)
 ├── models/
 │   └── 03_edsr_x3/   모델 하나가 폴더 하나

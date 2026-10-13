@@ -13,20 +13,30 @@ from skimage.metrics import structural_similarity as _ssim
 BASE = 'https://raw.githubusercontent.com/BWMIN-Hub/SR_practice/main'
 API = 'https://api.github.com/repos/BWMIN-Hub/SR_practice/contents'
 
-# 각 split 의 대표 패치. REP 은 한 장(호환용), REPS 는 실습에서 보여줄 두 장이다.
+# 각 split 의 대표 패치. REP 은 한 장(호환용), REPS 는 실습에서 보여줄 패치다.
+#
+# 보여줄 때는 validation_real 을 쓴다 — 입력이 실제 Sentinel-2 관측본이라
+# 배포했을 때 실제로 보게 될 그림이다. 점수를 재는 compare() 는 그대로
+# validation(합성 입력 10패치)을 쓴다. 두 셋의 입력이 다르니 섞지 않는다.
+VIS = 'validation_real'
 REP = {
     'training': 'AOI_Barcelona_10_y0128_x0128',
-    'validation': 'AOI_Paris_1_6_y0064_x0192',   # 파리
+    'validation': 'AOI_Paris_1_6_y0064_x0192',
 }
 REPS = {
     'training': ['AOI_Barcelona_10_y0128_x0128', 'AOI_Busan_10_y0128_x0128'],
     'validation': ['AOI_Paris_1_6_y0064_x0192', 'AOI_Seoul_14_y0256_x0128'],
+    'validation_real': ['AOI_Munich_5_y0032_x0096',
+                        'AOI_Munich_16_y0224_x0224',
+                        'AOI_Athens_10_y0362_x0282'],
 }
+# 확대해서 볼 자리. 패치마다 구조가 제일 빽빽한 곳을 미리 잡아 뒀다.
+VIS_CENTER = [(302, 62), (107, 307), (322, 322)]
 TEST = 'incheon_600.png'                          # a real capture, no target
 TESTS = ['incheon_600.png', 'incheon2_600.png']   # 같은 씬의 다른 두 구역
 SHAVE = 4                                         # 점수 잴 때 잘라낼 가장자리
 
-__all__ = ['BASE', 'REP', 'REPS', 'TEST', 'TESTS', 'SHAVE', 'fetch', 'pair', 'load_test',
+__all__ = ['BASE', 'REP', 'REPS', 'VIS', 'VIS_CENTER', 'TEST', 'TESTS', 'SHAVE', 'fetch', 'pair', 'load_test',
            'list_split', 'show', 'zoom', 'score', 'compare', 'bicubic', 'nearest', 'retarget',
            'show_data', 'show_results', 'show_test',
            'np', 'plt', 'cv2', 'imageio', 'json', 'os', 'urllib']
@@ -205,13 +215,13 @@ def compare(upscale_fn, split='validation', plot=True, label='model', scale=3):
 
 
 # ──────────────────────────────────────────────────────────────────────
-# 실습에서 쓰는 표시 헬퍼. validation 2패치, test 2구역을 한 번에 그린다.
+# 실습에서 쓰는 표시 헬퍼. 실제 Sentinel-2 패치와 test 2구역을 그린다.
 # ──────────────────────────────────────────────────────────────────────
 
 def show_data():
-    """1. 데이터 — validation 2패치 + test 2구역을 한눈에."""
-    panels = [(f'validation {i+1}', *pair('validation', s))
-              for i, s in enumerate(REPS['validation'])]
+    """1. 데이터 — 실제 Sentinel-2 패치 + test 2구역을 한눈에."""
+    panels = [(f'validation {i+1}', *pair(VIS, s))
+              for i, s in enumerate(REPS[VIS])]
     panels += [(f'test {i+1}', load_test(i), None) for i in range(len(TESTS))]
     show(panels)
 
@@ -224,15 +234,15 @@ def _per_patch(v, i):
 
 
 def show_results(upscale_fn, label='model', scale=3, center=None, size=None):
-    """4. 결과 — validation 2패치 각각을 '전체 + 확대' 로.
+    """4. 결과 — 실제 Sentinel-2 패치 각각을 '전체 + 확대' 로.
 
     center=(x, y) 로 확대 위치를 지정한다. 안 주면 오른쪽 아래.
     패치마다 다르게 하려면 center=[(x1, y1), (x2, y2)].
     """
-    for i, stem in enumerate(REPS['validation']):
-        lr, hr = pair('validation', stem)
+    for i, stem in enumerate(REPS[VIS]):
+        lr, hr = pair(VIS, stem)
         hr = retarget(hr, lr, scale)
-        c = _per_patch(center, i)
+        c = _per_patch(center if center is not None else VIS_CENTER, i)
         zoom([('Original LR', nearest(lr, scale)), ('Bicubic', bicubic(lr, scale)),
               (label, upscale_fn(lr)), ('Target HR', hr)],
              loc=None if c else 'br', center=c, size=size,
