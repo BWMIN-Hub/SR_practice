@@ -32,11 +32,13 @@ REPS = {
 }
 # 확대해서 볼 자리. 패치마다 구조가 제일 빽빽한 곳을 미리 잡아 뒀다.
 VIS_CENTER = [(302, 62), (107, 307), (322, 322)]
+VIS_SIZE = 160          # 확대 창의 한 변 (결과 크기 기준). zoom 그림과 같은 크기다.
 TEST = 'incheon_600.png'                          # a real capture, no target
 TESTS = ['incheon_600.png', 'incheon2_600.png']   # 같은 씬의 다른 두 구역
 SHAVE = 4                                         # 점수 잴 때 잘라낼 가장자리
 
-__all__ = ['BASE', 'REP', 'REPS', 'VIS', 'VIS_CENTER', 'TEST', 'TESTS', 'SHAVE', 'fetch', 'pair', 'load_test',
+__all__ = ['BASE', 'REP', 'REPS', 'VIS', 'VIS_CENTER', 'VIS_SIZE', 'TEST', 'TESTS',
+           'SHAVE', 'fetch', 'pair', 'load_test',
            'list_split', 'show', 'zoom', 'score', 'compare', 'bicubic', 'nearest', 'retarget',
            'show_data', 'show_results', 'show_test',
            'np', 'plt', 'cv2', 'imageio', 'json', 'os', 'urllib']
@@ -245,7 +247,7 @@ def show_results(upscale_fn, label='model', scale=3, center=None, size=None):
         c = _per_patch(center if center is not None else VIS_CENTER, i)
         zoom([('Original LR', nearest(lr, scale)), ('Bicubic', bicubic(lr, scale)),
               (label, upscale_fn(lr)), ('Target HR', hr)],
-             loc=None if c else 'br', center=c, size=size,
+             loc=None if c else 'br', center=c, size=size or VIS_SIZE,
              title=f'validation {i + 1}')
 
 

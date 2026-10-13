@@ -8,7 +8,7 @@
 | [`00_interpolation_basics`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/00_interpolation_basics.ipynb) | 보간법 4종 ×2·×3·×4 baseline | 불필요 |
 | [`01_srcnn_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/01_srcnn_x3.ipynb) | SRCNN — 최초의 CNN, conv 3장 | 선택 |
 | [`02_vdsr_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/02_vdsr_x3.ipynb) | VDSR — conv 20장 + 잔차 학습 | 선택 |
-| [`03_edsr_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/03_edsr_x3.ipynb) | EDSR — 학습 루프 + 적용 | 권장 |
+| [`03_edsr_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/03_edsr_x3.ipynb) | EDSR — 깊은 잔차 신경망 | 권장 |
 | [`04_srgan_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/04_srgan_x3.ipynb) | SRGAN — 판별자 붕괴 | 선택 |
 | [`05_esrgan_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/05_esrgan_x3.ipynb) | ESRGAN — RRDB + RaGAN, 손실 가중치 | 선택 |
 | [`06_swinir_x3`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/06_swinir_x3.ipynb) | SwinIR — Transformer, GAN 없음 | 선택 |
@@ -25,11 +25,12 @@
 
 번호가 곧 배우는 순서이자 모델이 나온 순서다 (SRCNN 2014 → HAT 2023).
 
-모델 페이지는 전부 같은 순서다: **데이터 → 훈련 → 결과 → 평가 → 최종 테스트(인천)**.
-이론 설명은 노트북에 넣지 않는다.
+모델 페이지는 전부 같은 순서다: **데이터 → 결과 → 최종 테스트(인천)**.
+학습 코드는 노트북에 두지 않는다 — 가중치는 서버에서 전체 데이터로 미리 학습한
+것을 받아 쓴다. 이론 설명도 노트북에 넣지 않는다.
 
-보여주는 패치는 고정했다 — training은 Barcelona, 결과를 볼 때는 실제 Sentinel-2
-3패치, 최종 테스트는 **Incheon**(실제 촬영본, 정답 없음).
+보여주는 패치는 고정했다 — 결과는 실제 Sentinel-2 3패치, 최종 테스트는
+**Incheon**(실제 촬영본, 정답 없음).
 
 모델·손실·유틸은 `lib/` 에 있고 노트북은 import 만 한다.
 
