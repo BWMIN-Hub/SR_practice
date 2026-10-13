@@ -42,21 +42,19 @@
 
 ## 가중치
 
-모델 페이지 7개는 각각 가중치를 두 벌 갖고 있다. 학습 조건이 다른 두 번의 학습
-결과이고, 기본값은 `_v3` 쪽이다. 노트북의 `CKPT` 줄 하나로 바꾼다.
+모델 페이지 7개는 서버에서 전체 데이터로 학습한 가중치를 받아 쓴다.
 
-| 모델 | 기본 | 이전 |
-|---|---|---|
-| 01 SRCNN | `srcnn_x3_v3.pth` | `srcnn_x3.pth` |
-| 02 VDSR | `vdsr_x3_v3.pth` | `vdsr_x3_30ep.pth` |
-| 03 EDSR | `edsr_x3_v3.pt` | `edsr_x3.pt` |
-| 04 SRGAN | `srgan_g_x3_v3.pth` | `srgan_g_x3.pth` |
-| 05 ESRGAN | `esrgan_g_x3_v3.pth` | `esrgan_g_x3.pth` |
-| 06 SwinIR | `swinir_x3_v3.pth` | `swinir_x3.pth` |
-| 07 HAT | `hat_x3_v3.pth` | `hat_x3.pth` |
+| 모델 | 가중치 |
+|---|---|
+| 01 SRCNN | `srcnn_x3_v3.pth` |
+| 02 VDSR | `vdsr_x3_v3.pth` |
+| 03 EDSR | `edsr_x3_v3.pt` |
+| 04 SRGAN | `srgan_g_x3_v3.pth` |
+| 05 ESRGAN | `esrgan_g_x3_v3.pth` |
+| 06 SwinIR | `swinir_x3_v3.pth` |
+| 07 HAT | `hat_x3_v3.pth` |
 
-`_v3` 쪽이 더 선명하고, IKONOS 를 기준으로 잰 PSNR 은 조금 낮다. 숫자는 각 모델
-폴더의 `README.md` 에 있다.
+점수는 각 모델 폴더의 `README.md` 에 있다.
 
 ## 보여주는 패치와 점수 재는 패치가 다르다
 

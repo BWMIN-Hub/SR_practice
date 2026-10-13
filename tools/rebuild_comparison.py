@@ -12,6 +12,8 @@ import sys
 
 import cv2
 import numpy as np
+
+sys.modules['onnx'] = None      # numpy 1.24 와 충돌 회피
 import torch
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -50,19 +52,19 @@ def t01(net, lr):
 
 def build():
     out = []
-    n = load_srcnn(f'{CK}/01_srcnn_x3/checkpoints/srcnn_x3.pth', device=DEV)
+    n = load_srcnn(f'{CK}/01_srcnn_x3/checkpoints/srcnn_x3_v3.pth', device=DEV)
     out.append(('SRCNN', lambda lr, n=n: srcnn_upscale(n, lr), n))
-    n = load_vdsr(f'{CK}/02_vdsr_x3/checkpoints/vdsr_x3.pth', device=DEV)
+    n = load_vdsr(f'{CK}/02_vdsr_x3/checkpoints/vdsr_x3_v3.pth', device=DEV)
     out.append(('VDSR', lambda lr, n=n: vdsr_upscale(n, lr), n))
-    n = load_edsr(f'{CK}/03_edsr_x3/checkpoints/edsr_x3.pt', device=DEV)
+    n = load_edsr(f'{CK}/03_edsr_x3/checkpoints/edsr_x3_v3.pt', device=DEV)
     out.append(('EDSR', lambda lr, n=n: t255(n, lr), n))
-    n = load_srgan(f'{CK}/04_srgan_x3/checkpoints/srgan_g_x3.pth', device=DEV)
+    n = load_srgan(f'{CK}/04_srgan_x3/checkpoints/srgan_g_x3_v3.pth', device=DEV)
     out.append(('SRGAN', lambda lr, n=n: t01(n, lr), n))
-    n = load_esrgan(f'{CK}/05_esrgan_x3/checkpoints/esrgan_g_x3.pth', device=DEV)
+    n = load_esrgan(f'{CK}/05_esrgan_x3/checkpoints/esrgan_g_x3_v3.pth', device=DEV)
     out.append(('ESRGAN', lambda lr, n=n: t01(n, lr), n))
-    n = load_swinir(f'{CK}/06_swinir_x3/checkpoints/swinir_x3.pth', device=DEV)
+    n = load_swinir(f'{CK}/06_swinir_x3/checkpoints/swinir_x3_v3.pth', device=DEV)
     out.append(('SwinIR', lambda lr, n=n: t01(n, lr), n))
-    n = load_hat(f'{CK}/07_hat_x3/checkpoints/hat_x3.pth', device=DEV)
+    n = load_hat(f'{CK}/07_hat_x3/checkpoints/hat_x3_v3.pth', device=DEV)
     out.append(('HAT', lambda lr, n=n: hat_upscale(n, lr), n))
     return out
 
@@ -87,20 +89,19 @@ def sr_tiled(fn, lr, tile=192, pad=24):
 def main():
     import imageio.v2 as io
     ap = argparse.ArgumentParser()
-    ap.add_argument('--vals', nargs='+',
-                    default=['val1=AOI_Paris_1_6_y0064_x0192',
-                             'val2=AOI_Seoul_14_y0256_x0128',
-                             'val3=AOI_Busan_7_y0064_x0192',
-                             'val4=AOI_Barcelona_2_y0384_x0064'])
+    ap.add_argument('--vals', nargs='+', default=None,
+                    help='val1=<패치> … 안 주면 실습 페이지가 보여주는 패치를 쓴다')
     a = ap.parse_args()
+    if a.vals is None:
+        a.vals = [f'val{i + 1}={stem}' for i, stem in enumerate(U.REPS[U.VIS])]
 
     res = f'{HERE}/results/comparison'
     os.makedirs(res, exist_ok=True)
     models = build()
     meta, rows = {}, []
 
-    # ── 검증 패치 ────────────────────────────────────────────────
-    d = f'{HERE}/dataset/validation'
+    # ── 보여줄 패치 — 입력이 실제 Sentinel-2 인 쪽 ───────────────
+    d = f'{HERE}/dataset/{U.VIS}'
     acc = {name: [] for name, _, _ in models}
     acc['Bicubic'] = []
     for spec in a.vals:
@@ -116,14 +117,16 @@ def main():
         for name, fn, _ in models:
             io.imwrite(f'{out}/{name}.png', fn(lr))
         h, w = hr.shape[:2]
-        meta[key] = dict(title=f'validation {key[3:]} — {stem}', full=[h, w],
+        meta[key] = dict(title=f'validation {key[3:]}', full=[h, w],
                          overview=[h, w], origin=[0, 0], extent=[w, h], has_hr=True)
         print(f'{key}: {stem}')
 
-    # 지표는 검증 10장 전체로 낸다 (페이지 표와 같은 잣대)
-    stems = sorted(f[:-4] for f in os.listdir(f'{d}/HR') if f.endswith('.png'))
-    data = [(io.imread(f'{d}/LR_bicubic/X{SCALE}/{s}x{SCALE}.png'),
-             io.imread(f'{d}/HR/{s}.png')) for s in stems]
+    # 지표는 점수용 검증 10장 전체로 낸다 (페이지 표와 같은 잣대).
+    # 보여주는 패치와 달리 입력이 합성본이라 화소가 정확히 맞는다.
+    m = f'{HERE}/dataset/validation'
+    stems = sorted(f[:-4] for f in os.listdir(f'{m}/HR') if f.endswith('.png'))
+    data = [(io.imread(f'{m}/LR_bicubic/X{SCALE}/{s}x{SCALE}.png'),
+             io.imread(f'{m}/HR/{s}.png')) for s in stems]
     for name, fn in [('Bicubic', lambda lr: U.bicubic(lr, SCALE))] + \
                     [(n, f) for n, f, _ in models]:
         v = [U.score(fn(lr), hr) for lr, hr in data]
@@ -147,7 +150,7 @@ def main():
                    cv2.resize(big, (800, 800), interpolation=cv2.INTER_AREA))
         for name, fn, _ in models:
             io.imwrite(f'{out}/{name}.png', sr_tiled(fn, lr_full)[c, c])
-        meta[key] = dict(title=f'test {key[4:]} (Incheon) — no target',
+        meta[key] = dict(title=f'test {key[4:]} — no IKONOS image',
                          full=[1800, 1800], overview=[800, 800],
                          origin=[ox, oy], extent=[768, 768], has_hr=False)
         print(f'{key}: {TEST_TILE[key]}')
