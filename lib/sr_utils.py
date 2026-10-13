@@ -39,8 +39,8 @@ TESTS = ['incheon_600.png', 'incheon2_600.png']   # 같은 씬의 다른 두 구
 SHAVE = 4                                         # 점수 잴 때 잘라낼 가장자리
 
 __all__ = ['BASE', 'REP', 'REPS', 'VIS', 'VIS_CENTER', 'VIS_SIZE', 'TEST', 'TESTS',
-           'SHAVE', 'fetch', 'pair', 'load_test',
-           'list_split', 'show', 'zoom', 'score', 'compare', 'bicubic', 'nearest', 'retarget',
+           'SHAVE', 'fetch', 'pair', 'load_test', 'list_split', 'show', 'zoom',
+           'score', 'titled', 'compare', 'bicubic', 'nearest', 'retarget',
            'show_data', 'show_results', 'show_test',
            'np', 'plt', 'cv2', 'imageio', 'json', 'os', 'urllib']
 
@@ -107,7 +107,7 @@ def show(items, title=''):
     plt.tight_layout(); plt.show()
 
 
-def zoom(panels, size=None, title='', ref=None, loc=None, center=None):
+def zoom(panels, size=None, title='', ref=None, loc=None, center=None, gt=None):
     """결과를 두 줄로 보여준다. panels: [(이름, 이미지)].
 
       윗줄 = 패치 전체 (노란 네모가 아랫줄에서 확대한 자리)
@@ -117,6 +117,9 @@ def zoom(panels, size=None, title='', ref=None, loc=None, center=None):
     center=(x, y) 로 확대할 중심을 직접 지정할 수 있다. 좌표는 위 줄에 보이는
     그림(=결과 크기, LR x3) 기준이다. loc 는 'br'(오른쪽 아래) 같은 모서리 지정.
     center > loc > 자동 선택 순으로 우선한다.
+    gt 를 주면 각 패널 제목 아래에 그 영상 대비 PSNR/SSIM 을 적는다. gt 와
+    같은 객체인 패널(=정답 자신)에는 안 적는다.
+
     ref 를 주면 그 이미지를 기준으로 고른다. 안 주면 마지막 패널이 기준이다.
     모델 출력을 기준으로 삼으면 모델이 바뀔 때마다 보는 곳이 달라지므로,
     여러 모델을 비교할 때는 장면 자체(bicubic 등)를 기준으로 넘기는 것이 좋다.
@@ -158,7 +161,7 @@ def zoom(panels, size=None, title='', ref=None, loc=None, center=None):
         a = ax[0][j]
         a.imshow(im, interpolation='nearest')
         a.add_patch(Rectangle((xx, yy), ss, ss, fill=False, ec='#ffcc00', lw=1.6))
-        a.set_title(name, fontsize=9)
+        a.set_title(titled(name, im, gt), fontsize=9)
         a.set_xticks([]); a.set_yticks([])
 
         b = ax[1][j]
@@ -171,6 +174,14 @@ def zoom(panels, size=None, title='', ref=None, loc=None, center=None):
     if title:
         fig.suptitle(title, fontsize=10)
     plt.tight_layout(); plt.show()
+
+
+def titled(name, im, gt):
+    """패널 제목에 점수를 붙인다. 잴 수 없으면 이름만 돌려준다."""
+    if gt is None or im is gt or im.shape != gt.shape:
+        return name
+    p, t = score(im, gt)
+    return f'{name}\nPSNR {p:.2f} / SSIM {t:.3f}'
 
 
 def retarget(hr, lr, scale):
@@ -249,7 +260,7 @@ def show_results(upscale_fn, label='model', scale=3, center=None, size=None):
         zoom([('Original LR', nearest(lr, scale)), ('Bicubic', bicubic(lr, scale)),
               (label, upscale_fn(lr)), ('IKONOS', hr)],
              loc=None if c else 'br', center=c, size=size or VIS_SIZE,
-             title=f'validation {i + 1}')
+             title=f'validation {i + 1}', gt=hr)
 
 
 def show_test(upscale_fn, label='model', scale=3, center=None, size=55):
