@@ -39,6 +39,25 @@ test는 **Incheon**(실제 촬영본, 정답 없음).
 | `lib/sr_losses.py` | `get_loss('l1' / 'l2' / 'charbonnier')` |
 | `lib/sr_utils.py` | `pair` `load_test` `show` `zoom` `score` `compare` `bicubic` |
 
+## 가중치 두 벌
+
+모델 페이지 7개는 각각 가중치를 두 벌 갖고 있다. 노트북의 `CKPT` 줄 하나로 고른다.
+
+| 모델 | 기본 (IKONOS 목표) | 의사라벨 목표 |
+|---|---|---|
+| 01 SRCNN | `srcnn_x3.pth` | `srcnn_x3_misr9.pth` |
+| 02 VDSR | `vdsr_x3_30ep.pth` | `vdsr_x3_misr9.pth` |
+| 03 EDSR | `edsr_x3.pt` | `edsr_x3_misr9.pt` |
+| 04 SRGAN | `srgan_g_x3.pth` | `srgan_g_x3_misr9.pth` |
+| 05 ESRGAN | `esrgan_g_x3.pth` | `esrgan_g_x3_misr9.pth` |
+| 06 SwinIR | `swinir_x3.pth` | `swinir_x3_misr9.pth` |
+| 07 HAT | `hat_x3.pth` | `hat_x3_misr9.pth` |
+
+`_misr9` 쪽은 IKONOS 가 아니라 **의사라벨**을 목표로 배운 것이다. IKONOS 한 장을
+확산 열화 모델로 9번 추론해 부화소 위상이 다른 스택을 만들고, 그 9장을 MISR 로
+합성해 얻은 목표다. IKONOS 기준 PSNR 은 내려가고 선명도는 올라간다 — 자세한
+숫자는 각 모델 폴더의 `README.md` 에 있다.
+
 ## 폴더 구성
 
 ```
