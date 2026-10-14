@@ -29,7 +29,7 @@ REPS = {
     'validation_real': ['AOI_Munich_5_y0032_x0096',
                         'AOI_Munich_16_y0224_x0224',
                         'AOI_Athens_10_y0362_x0282',
-                        'AOI_Busan_7_y0096_x0160'],
+                        'AOI_Munich_16_y0544_x0096'],
 }
 # 확대해서 볼 자리. 패치마다 구조가 제일 빽빽한 곳을 미리 잡아 뒀다.
 VIS_CENTER = [(302, 62), (107, 307), (322, 322), (192, 192)]
