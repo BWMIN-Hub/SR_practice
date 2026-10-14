@@ -138,5 +138,25 @@
    768
   ],
   "has_hr": false
+ },
+ "down4": {
+  "title": "validation 4 \u2014 input made from IKONOS",
+  "full": [
+   384,
+   384
+  ],
+  "overview": [
+   384,
+   384
+  ],
+  "origin": [
+   0,
+   0
+  ],
+  "extent": [
+   384,
+   384
+  ],
+  "has_hr": true
  }
 }
