@@ -79,6 +79,26 @@
   ],
   "has_hr": true
  },
+ "val5": {
+  "title": "validation 5",
+  "full": [
+   288,
+   288
+  ],
+  "overview": [
+   288,
+   288
+  ],
+  "origin": [
+   0,
+   0
+  ],
+  "extent": [
+   288,
+   288
+  ],
+  "has_hr": true
+ },
  "test1": {
   "title": "test 1 \u2014 no IKONOS image",
   "full": [

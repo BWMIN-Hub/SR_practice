@@ -29,10 +29,11 @@ REPS = {
     'validation_real': ['AOI_Munich_5_y0032_x0096',
                         'AOI_Munich_16_y0224_x0224',
                         'AOI_Athens_10_y0362_x0282',
-                        'AOI_Munich_16_y0544_x0096'],
+                        'AOI_Munich_16_y0544_x0096',
+                        'AOI_Barcelona_9_y0368_x0240'],
 }
 # 확대해서 볼 자리. 패치마다 구조가 제일 빽빽한 곳을 미리 잡아 뒀다.
-VIS_CENTER = [(302, 62), (107, 307), (322, 322), (192, 192)]
+VIS_CENTER = [(302, 62), (107, 307), (322, 322), (192, 192), (144, 144)]
 VIS_SIZE = 160          # 확대 창의 한 변 (결과 크기 기준). zoom 그림과 같은 크기다.
 TEST = 'incheon_600.png'                          # a real capture, no IKONOS image
 TESTS = ['incheon_600.png', 'incheon2_600.png']   # 같은 씬의 다른 두 구역
