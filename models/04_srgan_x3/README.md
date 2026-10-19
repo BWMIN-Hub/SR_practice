@@ -6,9 +6,9 @@
 | | |
 |---|---|
 | 입력 | 데이터셋이 제공하는 Sentinel-2 LR (10 m) |
-| 목표 | IKONOS 영상 (3.3333 m), LR × 3 |
-| 학습 | IKONOS 804쌍, 100 epoch, batch 32, crop 96 |
-| 가중치 | `checkpoints/srgan_g_x3_v3.pth` |
+| 목표 | 3.3333 m 영상, LR × 3 |
+| 학습 | IKONOS 2,638패치 × 입력 9장 (LR 64 px), batch 16, L1, Adam 1e-5, 조기 종료 (최고 48 epoch) |
+| 가중치 | `checkpoints/srgan_g_x3_v4.pth` |
 | 노트북 | [`../../notebooks/04_srgan_x3.ipynb`](../../notebooks/04_srgan_x3.ipynb) |
 
 ## ×3 을 위해 고친 곳
@@ -34,12 +34,11 @@
 | Bicubic | 18.15 | 0.4805 |
 | SRGAN | **18.30** | **0.5187** |
 
-## 배포 가중치 (2026-10-13)
+## 배포 가중치 (2026-10-19)
 
-학습 조건을 달리해 다시 학습한 `srgan_g_x3_v3.pth` 를 쓴다.
+새 학습 데이터로 다시 학습한 `srgan_g_x3_v4.pth` 를 쓴다. 점수는 `dataset/validation/` 10패치 평균이다.
 
-| | PSNR | SSIM | 선명도 |
-|---|---|---|---|
-| Bicubic | 18.15 | 0.4805 | 7.62 |
-| **`srgan_g_x3_v3.pth`** | **18.13** | **0.5226** | **12.22** |
-| IKONOS | — | — | 45.14 |
+| | PSNR | SSIM |
+|---|---|---|
+| Bicubic | 18.15 | 0.4805 |
+| **`srgan_g_x3_v4.pth`** | **18.46** | **0.5131** |

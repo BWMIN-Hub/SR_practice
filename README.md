@@ -46,13 +46,13 @@
 
 | 모델 | 가중치 |
 |---|---|
-| 01 SRCNN | `srcnn_x3_v3.pth` |
-| 02 VDSR | `vdsr_x3_v3.pth` |
-| 03 EDSR | `edsr_x3_v3.pt` |
-| 04 SRGAN | `srgan_g_x3_v3.pth` |
-| 05 ESRGAN | `esrgan_g_x3_v3.pth` |
-| 06 SwinIR | `swinir_x3_v3.pth` |
-| 07 HAT | `hat_x3_v3.pth` |
+| 01 SRCNN | `srcnn_x3_v4.pth` |
+| 02 VDSR | `vdsr_x3_v4.pth` |
+| 03 EDSR | `edsr_x3_v4.pt` |
+| 04 SRGAN | `srgan_g_x3_v4.pth` |
+| 05 ESRGAN | `esrgan_g_x3_v4.pth` |
+| 06 SwinIR | `swinir_x3_v4.pth` |
+| 07 HAT | `hat_x3_v4.pth` |
 
 점수는 각 모델 폴더의 `README.md` 에 있다.
 

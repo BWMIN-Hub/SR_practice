@@ -52,19 +52,19 @@ def t01(net, lr):
 
 def build():
     out = []
-    n = load_srcnn(f'{CK}/01_srcnn_x3/checkpoints/srcnn_x3_v3.pth', device=DEV)
+    n = load_srcnn(f'{CK}/01_srcnn_x3/checkpoints/srcnn_x3_v4.pth', device=DEV)
     out.append(('SRCNN', lambda lr, n=n: srcnn_upscale(n, lr), n))
-    n = load_vdsr(f'{CK}/02_vdsr_x3/checkpoints/vdsr_x3_v3.pth', device=DEV)
+    n = load_vdsr(f'{CK}/02_vdsr_x3/checkpoints/vdsr_x3_v4.pth', device=DEV)
     out.append(('VDSR', lambda lr, n=n: vdsr_upscale(n, lr), n))
-    n = load_edsr(f'{CK}/03_edsr_x3/checkpoints/edsr_x3_v3.pt', device=DEV)
+    n = load_edsr(f'{CK}/03_edsr_x3/checkpoints/edsr_x3_v4.pt', device=DEV)
     out.append(('EDSR', lambda lr, n=n: t255(n, lr), n))
-    n = load_srgan(f'{CK}/04_srgan_x3/checkpoints/srgan_g_x3_v3.pth', device=DEV)
+    n = load_srgan(f'{CK}/04_srgan_x3/checkpoints/srgan_g_x3_v4.pth', device=DEV)
     out.append(('SRGAN', lambda lr, n=n: t01(n, lr), n))
-    n = load_esrgan(f'{CK}/05_esrgan_x3/checkpoints/esrgan_g_x3_v3.pth', device=DEV)
+    n = load_esrgan(f'{CK}/05_esrgan_x3/checkpoints/esrgan_g_x3_v4.pth', device=DEV)
     out.append(('ESRGAN', lambda lr, n=n: t01(n, lr), n))
-    n = load_swinir(f'{CK}/06_swinir_x3/checkpoints/swinir_x3_v3.pth', device=DEV)
+    n = load_swinir(f'{CK}/06_swinir_x3/checkpoints/swinir_x3_v4.pth', device=DEV)
     out.append(('SwinIR', lambda lr, n=n: t01(n, lr), n))
-    n = load_hat(f'{CK}/07_hat_x3/checkpoints/hat_x3_v3.pth', device=DEV)
+    n = load_hat(f'{CK}/07_hat_x3/checkpoints/hat_x3_v4.pth', device=DEV)
     out.append(('HAT', lambda lr, n=n: hat_upscale(n, lr), n))
     return out
 

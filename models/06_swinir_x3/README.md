@@ -11,9 +11,9 @@
 | 구조 | Swin Transformer, classical SR 설정 (embed_dim 180, RSTB 6개, window 8) |
 | 손실 | **L1 하나** — 판별자 없음 |
 | 입력 | 데이터셋이 제공하는 Sentinel-2 LR (10 m) |
-| 목표 | IKONOS 영상 (3.3333 m), LR × 3 |
-| 학습 | IKONOS 804쌍, 100 epoch, batch 8, LR 패치 48, Adam 2e-4 (50·75·90% 지점 절반) |
-| 가중치 | `checkpoints/swinir_x3_v3.pth` |
+| 목표 | 3.3333 m 영상, LR × 3 |
+| 학습 | IKONOS 2,638패치 × 입력 9장 (LR 64 px), batch 4, L1, Adam 1e-5, 조기 종료 (최고 32 epoch) |
+| 가중치 | `checkpoints/swinir_x3_v4.pth` |
 | 노트북 | [`../../notebooks/06_swinir_x3.ipynb`](../../notebooks/06_swinir_x3.ipynb) |
 
 ## ×3 을 고칠 필요가 없었다
@@ -79,12 +79,11 @@ g_LR 변형을 합친 학습셋으로, 검증 PSNR 이 4 epoch 연속 안 오르
 여섯 모델 모두 2~7 epoch 에서 최고를 찍고 멈췄다. 최대 20 을 줬는데 아무도
 절반을 못 갔다 — 이 데이터로는 더 배울 것이 없다는 뜻이다.
 
-## 배포 가중치 (2026-10-13)
+## 배포 가중치 (2026-10-19)
 
-학습 조건을 달리해 다시 학습한 `swinir_x3_v3.pth` 를 쓴다.
+새 학습 데이터로 다시 학습한 `swinir_x3_v4.pth` 를 쓴다. 점수는 `dataset/validation/` 10패치 평균이다.
 
-| | PSNR | SSIM | 선명도 |
-|---|---|---|---|
-| Bicubic | 18.15 | 0.4805 | 7.62 |
-| **`swinir_x3_v3.pth`** | **18.42** | **0.5493** | **14.69** |
-| IKONOS | — | — | 45.14 |
+| | PSNR | SSIM |
+|---|---|---|
+| Bicubic | 18.15 | 0.4805 |
+| **`swinir_x3_v4.pth`** | **18.70** | **0.5493** |
