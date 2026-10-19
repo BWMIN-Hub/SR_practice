@@ -7,7 +7,7 @@
 |---|---|
 | 입력 | 데이터셋이 제공하는 Sentinel-2 LR (10 m) |
 | 목표 | 3.3333 m 영상, LR × 3 |
-| 학습 | IKONOS 2,638패치 × 입력 9장 (LR 64 px), batch 16, L1, Adam 1e-5, 조기 종료 (최고 48 epoch) |
+| 학습 | IKONOS 2,638패치 × 입력 9장 (LR 64 px), batch 16, 업스트림 손실 그대로 (MSE + 0.006 VGG16 + 0.001 adversarial + TV, 판별자 함께 학습), Adam 1e-5, 60 epoch 상한까지 (최고 57 epoch) |
 | 가중치 | `checkpoints/srgan_g_x3_v4.pth` |
 | 노트북 | [`../../notebooks/04_srgan_x3.ipynb`](../../notebooks/04_srgan_x3.ipynb) |
 
@@ -41,4 +41,4 @@
 | | PSNR | SSIM |
 |---|---|---|
 | Bicubic | 18.15 | 0.4805 |
-| **`srgan_g_x3_v4.pth`** | **18.46** | **0.5131** |
+| **`srgan_g_x3_v4.pth`** | **18.52** | **0.5150** |

@@ -18,7 +18,7 @@ ESRGAN 쪽 가중치는 아래 "손실 가중치를 재조정했다" 를 보라.
 |---|---|
 | 입력 | 데이터셋이 제공하는 Sentinel-2 LR (10 m) |
 | 목표 | 3.3333 m 영상, LR × 3 |
-| 학습 | IKONOS 2,638패치 × 입력 9장 (LR 64 px), batch 16, L1, Adam 1e-5, 조기 종료 (최고 51 epoch) |
+| 학습 | IKONOS 2,638패치 × 입력 9장 (LR 64 px), batch 16, ESRGAN 손실 그대로 (L1 + 0.1 VGG19 + 5e-4 RaGAN, 판별자 함께 학습), Adam 1e-5, 조기 종료 (최고 14 epoch) |
 | 가중치 | `checkpoints/esrgan_g_x3_v4.pth` |
 | 노트북 | [`../../notebooks/05_esrgan_x3.ipynb`](../../notebooks/05_esrgan_x3.ipynb) |
 
@@ -96,4 +96,4 @@ g_LR 변형을 합친 학습셋으로, 검증 PSNR 이 4 epoch 연속 안 오르
 | | PSNR | SSIM |
 |---|---|---|
 | Bicubic | 18.15 | 0.4805 |
-| **`esrgan_g_x3_v4.pth`** | **18.60** | **0.5270** |
+| **`esrgan_g_x3_v4.pth`** | **18.37** | **0.5281** |
