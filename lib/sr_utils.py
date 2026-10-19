@@ -261,7 +261,7 @@ def show_results(upscale_fn, label='model', scale=3, center=None, size=None):
         zoom([('Original LR', nearest(lr, scale)), ('Bicubic', bicubic(lr, scale)),
               (label, upscale_fn(lr)), ('IKONOS', hr)],
              loc=None if c else 'br', center=c, size=size or VIS_SIZE,
-             title=f'validation {i + 1}', gt=hr)
+             title=f'validation {i + 1}')
 
 
 def show_test(upscale_fn, label='model', scale=3, center=None, size=55):
