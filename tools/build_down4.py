@@ -28,7 +28,6 @@ for n, f, _ in RB.build():
 meta = json.load(open(f'{C}/results/comparison/meta.json'))
 meta['down4'] = dict(meta['val4'], title='validation 4 — input made from IKONOS')
 json.dump(meta, open(f'{C}/results/comparison/meta.json', 'w'), indent=1)
-iqa.load_models(f'{C}/results/iqa')
 for n in ['Bicubic','SRCNN','VDSR','EDSR','SRGAN','ESRGAN','SwinIR','HAT']:
     r = iqa.evaluate(io.imread(f'{out}/{n}.png'), hr)
     print(f'{n:8s}', ' '.join(f'{k}={v:.3f}' for k, v in r.items()))

@@ -6,31 +6,21 @@
     ergas   밴드별 오차를 밴드 밝기로 나눠 모은다. 0 에 가까울수록 좋다
 
   NR-IQA (No Reference, 결과 한 장만 있으면 된다)
-    niqe     자연 영상다움에서 얼마나 벗어났나. 낮을수록 좋다
-    brisque  분포 모양 36개를 학습된 회귀에 넣어 점수. 낮을수록 좋다
-    piqe     16x16 조각마다 규칙으로 채점해 평균. 낮을수록 좋다
+    niqe     자연 영상다움에서 얼마나 벗어났나. 낮을수록 좋다  (pyiqa)
+    brisque  분포 모양 36개를 학습된 회귀에 넣어 점수. 낮을수록 좋다  (pyiqa)
+    piqe     16x16 조각마다 이음매·잡음을 재서 평균. 낮을수록 좋다
 
-주의 — NIQE 와 BRISQUE 는 "정상 영상이란 이런 것" 이라는 기준 모델이 필요하다.
-원 논문은 자연 사진 수백 장(LIVE)으로 그 기준을 만들었는데, 위성 영상은 통계가
-달라 그대로 쓰면 뜻이 없다. 그래서 이 프로젝트의 IKONOS HR 로 기준을 다시 잡았다.
-  -> results/iqa/niqe_model.npz, brisque_svr.npz  (tools/fit_iqa.py 가 만든다)
-따라서 값은 **이 데이터 안에서의 상대 비교**로만 읽어야 하고, 다른 논문의
-NIQE/BRISQUE 수치와 직접 견주면 안 된다. PIQE 는 기준 모델이 없어 그대로 쓴다.
+NR 지표는 sr_data/metrics.py 와 같은 구현이다. 입력은 비트 깊이에 맞춰 uint8 로
+바꾼 뒤 잰다 (uint16 은 4095 / 16383 / 65535 중 맞는 최대값으로 나눈다).
+NIQE·BRISQUE 는 pyiqa 가 필요하다:  pip install pyiqa
 """
-import os
-
 import cv2
 import numpy as np
-from scipy.special import gamma as _G
 
 __all__ = ['psnr', 'ssim', 'ergas', 'niqe', 'brisque', 'piqe',
-           'FR', 'NR', 'ALL', 'BETTER', 'evaluate', 'load_models']
+           'FR', 'NR', 'ALL', 'BETTER', 'evaluate']
 
 SHAVE = 4
-_ALPHA = np.arange(0.2, 10.001, 0.001)
-_RHO = _G(1 / _ALPHA) * _G(3 / _ALPHA) / _G(2 / _ALPHA) ** 2
-_RA = _G(2 / _ALPHA) ** 2 / (_G(1 / _ALPHA) * _G(3 / _ALPHA))
-_DIRS = [(0, 1), (1, 0), (1, 1), (1, -1)]
 
 FR = ['psnr', 'ssim', 'ergas']
 NR = ['niqe', 'brisque', 'piqe']
@@ -63,142 +53,237 @@ def ergas(sr, hr, scale=3):
     return float(100 / scale * np.sqrt(((rmse / mu) ** 2).mean()))
 
 
-# ── 공통 도구 (NIQE·BRISQUE·PIQE 가 모두 MSCN 에서 시작한다) ──────────
-def mscn(gray, ksize=7, sigma=7 / 6):
-    """국소 평균을 빼고 국소 표준편차로 나눈다. 밝기·대비가 사라지고 질감만 남는다."""
-    x = gray.astype(np.float64)
-    mu = cv2.GaussianBlur(x, (ksize, ksize), sigma)
-    sq = cv2.GaussianBlur(x * x, (ksize, ksize), sigma)
-    sd = np.sqrt(np.abs(sq - mu * mu))
-    return (x - mu) / (sd + 1.0)
+def _to_uint8(image):
+    """
+    Convert image to uint8 [0, 255] using bit-depth aware scaling.
+    Matches evaluate_sr_improvement.py to_uint8_0_255().
+
+    Args:
+        image (numpy.ndarray): Image of any dtype (uint8/uint16/float)
+
+    Returns:
+        numpy.ndarray: uint8 image [0, 255]
+    """
+    if image.dtype == np.uint8:
+        return image
+
+    img_f = image.astype(np.float64)
+    if img_f.size == 0:
+        return np.zeros_like(image, dtype=np.uint8)
+
+    img_max = float(np.nanmax(img_f))
+
+    if img_max <= 0:
+        return np.zeros_like(image, dtype=np.uint8)
+
+    if img_max <= 1.0:
+        scaled = img_f * 255.0
+    else:
+        if img_max <= 255.0:
+            in_max = 255.0
+        elif img_max <= 4095.0:
+            in_max = 4095.0
+        elif img_max <= 16383.0:
+            in_max = 16383.0
+        elif img_max <= 65535.0:
+            in_max = 65535.0
+        else:
+            in_max = img_max
+        scaled = (np.clip(img_f, 0.0, in_max) / in_max) * 255.0
+
+    return np.clip(np.rint(scaled), 0, 255).astype(np.uint8)
 
 
-def _gray(img):
-    return (cv2.cvtColor(img, cv2.COLOR_RGB2GRAY).astype(np.float64)
-            if img.ndim == 3 else img.astype(np.float64))
+def _prepare_image_tensor(image):
+    """
+    Convert numpy image to torch tensor for pyiqa metrics.
+    First converts to uint8 (bit-depth aware), then normalizes to [0, 1].
+
+    Args:
+        image (numpy.ndarray): Image (H x W x C) or (C x H x W), uint8/uint16/float
+
+    Returns:
+        torch.Tensor: (1, 3, H, W) float32 tensor normalized to [0, 1]
+    """
+    import torch
+
+    # Convert to uint8 first (handles uint16, float, etc.)
+    image = _to_uint8(image)
+
+    # (H, W, C) -> (C, H, W)
+    if len(image.shape) == 3 and image.shape[2] in [1, 3, 4]:
+        image = image.transpose(2, 0, 1)
+    elif len(image.shape) == 2:
+        image = image[np.newaxis, :, :]  # (H, W) -> (1, H, W)
+
+    image_normalized = image.astype(np.float32) / 255.0
+    image_tensor = torch.from_numpy(image_normalized).unsqueeze(0)
+
+    # 3채널(RGB)로 변환
+    if image_tensor.shape[1] == 4:
+        image_tensor = image_tensor[:, :3, :, :]
+    elif image_tensor.shape[1] == 1:
+        image_tensor = image_tensor.repeat(1, 3, 1, 1)
+
+    return image_tensor
 
 
-def _fit_ggd(v):
-    s2 = float(np.mean(v ** 2)); m = float(np.mean(np.abs(v)))
-    if m == 0:
-        return 2.0, s2
-    return float(_ALPHA[np.argmin(np.abs(_RHO - s2 / m ** 2))]), s2
+def _prepare_grayscale_for_piqe(image):
+    """Convert numpy image to grayscale float64 array scaled to [0, 255]."""
+    if len(image.shape) == 3 and image.shape[0] in [1, 3, 4] and image.shape[0] < image.shape[1]:
+        image = image.transpose(1, 2, 0)
+
+    if len(image.shape) == 3:
+        if image.shape[2] >= 3:
+            gray = cv2.cvtColor(image[:, :, :3], cv2.COLOR_RGB2GRAY)
+        else:
+            gray = image[:, :, 0]
+    else:
+        gray = image.copy()
+
+    gray = gray.astype(np.float64)
+    max_val = gray.max()
+    if max_val > 0:
+        gray = np.round(255.0 * (gray / max_val))
+    return gray
 
 
-def _fit_aggd(v):
-    l, r = v[v < 0], v[v > 0]
-    sl = np.sqrt(np.mean(l ** 2)) if l.size else 1e-6
-    sr_ = np.sqrt(np.mean(r ** 2)) if r.size else 1e-6
-    g = sl / sr_
-    R = np.mean(np.abs(v)) ** 2 / np.mean(v ** 2)
-    Rp = R * (g ** 3 + 1) * (g + 1) / (g ** 2 + 1) ** 2
-    a = float(_ALPHA[np.argmin(np.abs(_RA - Rp))])
-    return a, float((sr_ - sl) * _G(2 / a) / _G(1 / a)), float(sl ** 2), float(sr_ ** 2)
+def _normalize_img_with_gauss(image, kernel_size=7, sigma=7.0 / 6.0):
+    """Compute MSCN coefficients using Gaussian local normalization."""
+    mu = cv2.GaussianBlur(
+        image, (kernel_size, kernel_size), sigmaX=sigma, borderType=cv2.BORDER_REPLICATE
+    )
+    sigma_map = np.sqrt(
+        np.abs(
+            cv2.GaussianBlur(
+                image * image, (kernel_size, kernel_size), sigmaX=sigma, borderType=cv2.BORDER_REPLICATE
+            )
+            - mu * mu
+        )
+    )
+    return (image - mu) / (sigma_map + 1.0)
 
 
-def _feat18(m):
-    """한 스케일에서 GGD 2 + AGGD 4x4 = 18개."""
-    f = list(_fit_ggd(m.ravel()))
-    for dy, dx in _DIRS:
-        f += list(_fit_aggd((m * np.roll(np.roll(m, dy, 0), dx, 1)).ravel()))
-    return f
+def _piqe_notice_dist_criterion(blocks, window_size, block_impaired_threshold, block_size):
+    """Detect blocks with noticeable edge artifacts."""
+    top_edge = blocks[:, 0, :]
+    seg_top = np.lib.stride_tricks.sliding_window_view(top_edge, window_shape=window_size, axis=1)
+
+    right_edge = blocks[:, block_size - 1]
+    seg_right = np.lib.stride_tricks.sliding_window_view(right_edge, window_shape=window_size, axis=1)
+
+    bottom_edge = blocks[:, block_size - 1, :]
+    seg_bottom = np.lib.stride_tricks.sliding_window_view(bottom_edge, window_shape=window_size, axis=1)
+
+    left_edge = blocks[:, 0]
+    seg_left = np.lib.stride_tricks.sliding_window_view(left_edge, window_shape=window_size, axis=1)
+
+    std_top = np.std(seg_top, axis=-1, ddof=1)
+    std_right = np.std(seg_right, axis=-1, ddof=1)
+    std_bottom = np.std(seg_bottom, axis=-1, ddof=1)
+    std_left = np.std(seg_left, axis=-1, ddof=1)
+
+    return (
+        (std_top < block_impaired_threshold).any(axis=1)
+        | (std_right < block_impaired_threshold).any(axis=1)
+        | (std_bottom < block_impaired_threshold).any(axis=1)
+        | (std_left < block_impaired_threshold).any(axis=1)
+    )
 
 
-def features36(img):
-    """BRISQUE 특징 36개 (원본 + 1/2 축소)."""
-    x, out = _gray(img), []
-    for _ in range(2):
-        out += _feat18(mscn(x))
-        x = cv2.resize(x, (x.shape[1] // 2, x.shape[0] // 2),
-                       interpolation=cv2.INTER_AREA)
-    return np.array(out)
+def _piqe_noise_criterion(blocks, block_size, block_var):
+    """Analyze blocks for Gaussian noise distortions."""
+    block_sigma = np.sqrt(block_var)
+    center1 = (block_size + 1) // 2
+    center2 = center1 + 1
+
+    center_cols = np.stack((blocks[:, :, center1 - 1], blocks[:, :, center2 - 1]), axis=-1)
+    surround = np.delete(blocks, [center1 - 1, center2 - 1], axis=2)
+
+    center_std = np.std(center_cols, axis=(1, 2), ddof=1)
+    surround_std = np.std(surround, axis=(1, 2), ddof=1)
+
+    cen_sur_dev = np.zeros_like(center_std, dtype=np.float64)
+    valid = surround_std != 0
+    cen_sur_dev[valid] = center_std[valid] / surround_std[valid]
+
+    block_beta = np.abs(block_sigma - cen_sur_dev) / np.maximum(np.maximum(block_sigma, cen_sur_dev), 1e-10)
+    return block_sigma, block_beta
 
 
-# ── 참조가 없는 지표 ──────────────────────────────────────────────────
-_M = {}
+
+# ── 참조가 없는 지표 (sr_data/metrics.py) ───────────────────────────
+_PYIQA = {}
 
 
-def load_models(path=None):
-    """기준 모델(NIQE 평균·공분산, BRISQUE 회귀)을 읽는다. 없으면 안내한다."""
-    if _M:
-        return _M
-    root = path or os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                '..', 'results', 'iqa')
-    for k, f in (('niqe', 'niqe_model.npz'), ('brisque', 'brisque_svr.npz')):
-        p = os.path.join(root, f)
-        if not os.path.exists(p):
-            raise FileNotFoundError(
-                f'{f} 가 없다. tools/fit_iqa.py 로 만들거나 저장소에서 내려받아야 한다.')
-        _M[k] = dict(np.load(p, allow_pickle=True))
-    return _M
+def _pyiqa(name):
+    if name not in _PYIQA:
+        import pyiqa
+        _PYIQA[name] = pyiqa.create_metric(name, device='cpu')
+    return _PYIQA[name]
 
 
-def niqe(img, patch=96, path=None):
-    """자연 영상다움에서 벗어난 정도. 기준 분포와의 거리다."""
-    M = load_models(path)['niqe']
-    g = _gray(img)
-    ny, nx = g.shape[0] // patch, g.shape[1] // patch
-    feats = []
-    for by in range(max(ny, 1)):
-        for bx in range(max(nx, 1)):
-            b = g[by * patch:(by + 1) * patch, bx * patch:(bx + 1) * patch]
-            if min(b.shape) < patch // 2:
-                continue
-            m = mscn(b)
-            if m.var() < 0.05:                 # 밋밋한 조각은 뺀다
-                continue
-            feats.append(_feat18(m))
-    if not feats:
-        return float('nan')
-    F = np.array(feats)
-    mu, cov = F.mean(0), np.cov(F.T) if len(F) > 1 else np.eye(F.shape[1])
-    mu0, cov0 = M['mu'], M['cov']
-    d = mu0 - mu
-    inv = np.linalg.pinv((cov0 + cov) / 2)
-    return float(np.sqrt(max(d @ inv @ d, 0)))
+def niqe(img):
+    """NIQE (pyiqa). 낮을수록 좋다."""
+    return float(_pyiqa('niqe')(_prepare_image_tensor(img)).item())
 
 
-def brisque(img, path=None):
-    """36개 특징을 학습된 회귀에 넣어 점수 하나."""
-    M = load_models(path)['brisque']
-    x = (features36(img) - M['mu']) / M['sd']
-    k = np.exp(-M['gamma'] * ((M['sv'] - x) ** 2).sum(1))
-    return float(np.clip(M['coef'] @ k + M['b'], 0, 100))
+def brisque(img):
+    """BRISQUE (pyiqa). 낮을수록 좋다."""
+    return float(_pyiqa('brisque')(_prepare_image_tensor(img)).item())
 
 
-def piqe(img, blk=16, act_th=0.1, imp_th=0.1):
-    """16x16 조각마다 이음매·잡음을 재서 평균. 기준 모델이 필요 없다."""
-    m = mscn(_gray(img))
-    ny, nx = m.shape[0] // blk, m.shape[1] // blk
-    n_act = 0.0; bad = 0.0
-    for by in range(ny):
-        for bx in range(nx):
-            b = m[by * blk:(by + 1) * blk, bx * blk:(bx + 1) * blk]
-            v = float(b.var())
-            if v <= act_th:
-                continue
-            n_act += 1
-            gy, gx = np.abs(np.diff(b, axis=0)), np.abs(np.diff(b, axis=1))
-            edge = max(gy[0].mean(), gy[-1].mean(), gx[:, 0].mean(), gx[:, -1].mean())
-            inner = 0.5 * (gy[1:-1].mean() + gx[:, 1:-1].mean()) + 1e-9
-            if edge > inner * (1 + imp_th):
-                bad += v
-            else:
-                res = b - cv2.GaussianBlur(b, (3, 3), 0.8)
-                if res.var() > 0.35 * v:
-                    bad += v
-    return float(np.clip(100 * (bad + 1.0) / (n_act + 1.0), 0, 100))
+def piqe(image):
+    """PIQE. 16x16 조각의 MSCN 으로 이음매·잡음을 잰다. 0 - 100, 낮을수록 좋다."""
+    block_size = 16
+    activity_threshold = 0.1
+    block_impaired_threshold = 0.1
+    window_size = 6
+
+    gray = _prepare_grayscale_for_piqe(image)
+    rows, cols = gray.shape[:2]
+
+    rows_pad = (block_size - rows % block_size) % block_size
+    cols_pad = (block_size - cols % block_size) % block_size
+    if rows_pad > 0 or cols_pad > 0:
+        gray = np.pad(gray, ((0, rows_pad), (0, cols_pad)), mode='symmetric')
+
+    img_normalized = _normalize_img_with_gauss(gray)
+
+    n_blocks_h = img_normalized.shape[0] // block_size
+    n_blocks_w = img_normalized.shape[1] // block_size
+    blocks = img_normalized.reshape(n_blocks_h, block_size, n_blocks_w, block_size)
+    blocks = blocks.transpose(0, 2, 1, 3).reshape(-1, block_size, block_size)
+
+    block_var = np.var(blocks, axis=(1, 2), ddof=1)
+    active_blocks = block_var > activity_threshold
+    n_hsa = int(np.sum(active_blocks))
+    if n_hsa == 0:
+        return 100.0
+
+    block_impaired = _piqe_notice_dist_criterion(
+        blocks, window_size, block_impaired_threshold, block_size
+    )
+    block_sigma, block_beta = _piqe_noise_criterion(blocks, block_size - 1, block_var)
+    noise_mask = block_sigma > 2 * block_beta
+
+    dist_block_scores = (
+        active_blocks.astype(np.float64) * block_impaired.astype(np.float64) * (1.0 - block_var)
+        + active_blocks.astype(np.float64) * noise_mask.astype(np.float64) * block_var
+    )
+    piqe_score = ((np.sum(dist_block_scores) + 1.0) / (1.0 + n_hsa)) * 100.0
+    return float(np.clip(piqe_score, 0.0, 100.0))
 
 
-def evaluate(sr, hr=None, scale=3, path=None):
+def evaluate(sr, hr=None, scale=3):
     """한 장에 대해 잴 수 있는 지표를 모두 낸다. hr 이 없으면 NR 만."""
     out = {}
     if hr is not None:
         out['psnr'] = psnr(sr, hr)
         out['ssim'] = ssim(sr, hr)
         out['ergas'] = ergas(sr, hr, scale)
-    out['niqe'] = niqe(sr, path=path)
-    out['brisque'] = brisque(sr, path=path)
+    out['niqe'] = niqe(sr)
+    out['brisque'] = brisque(sr)
     out['piqe'] = piqe(sr)
     return out
 
@@ -256,4 +341,4 @@ def report(items, metrics=None, crop=None, title='', figsize_w=2.0):
     plt.show()
 
 
-__all__ += ['report', 'features36', 'mscn']
+__all__ += ['report']

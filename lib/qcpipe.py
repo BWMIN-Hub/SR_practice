@@ -385,9 +385,8 @@ def _pick(s, n_lr):
     return out
 
 
-def iqa_scan(src_path, dst_path, s, cfg, size=200, iqa_dir=None):
+def iqa_scan(src_path, dst_path, s, cfg, size=200):
     """Three crops.  For each, bicubic and SR scored with NIQE / BRISQUE / PIQE."""
-    iqa.load_models(iqa_dir)
     sc = cfg.scale
     out = []
     with rasterio.open(src_path) as a, rasterio.open(dst_path) as b:
