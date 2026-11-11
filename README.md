@@ -22,6 +22,7 @@
 | [`16_read_properly`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/16_read_properly.ipynb) | 영상 제대로 읽기 — 읽기 · 자료형 · 크기 (GPU 불필요) | 불필요 |
 | [`17_image_content`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/17_image_content.ipynb) | 영상 들여다보기 — 분포 · 밴드 구성 · 구름과 선명도 (GPU 불필요) | 불필요 |
 | [`18_preflight`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/18_preflight.ipynb) | 실행 전 점검 5가지 — GPU · 입력 변환 · 패치 · 정밀도 · 스크립트 | 필요 |
+| [`19_scene_pipeline`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/19_scene_pipeline.ipynb) | 종합 — THEOS-2 1장면: 전처리 · 타일 추론(HAT ×3) · windowed write · QC · IQA · 리포트 | 필요 |
 
 번호가 곧 배우는 순서이자 모델이 나온 순서다 (SRCNN 2014 → HAT 2023).
 
@@ -39,6 +40,7 @@
 | `lib/sr_models.py` | `EDSR`, `load_edsr()` |
 | `lib/sr_losses.py` | `get_loss('l1' / 'l2' / 'charbonnier')` |
 | `lib/sr_utils.py` | `pair` `load_test` `show` `zoom` `score` `compare` `bicubic` |
+| `lib/qcpipe.py` | 19 종합 실습: `scan` `run` `qc` `iqa_scan` `write_report` |
 
 ## 가중치
 
