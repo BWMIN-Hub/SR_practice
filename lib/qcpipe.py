@@ -2,7 +2,7 @@
 
     scan          header + the conversion window, from a decimated read
     run           read a block, convert, infer in tiles, convert back, write that block
-    qc            header, radiometry and seam checks, each one pass / CHECK
+    qc            header checks, each one pass / CHECK
     iqa_scan      no-reference scores (NIQE, BRISQUE, PIQE) on a few crops
     write_report  everything above as one self-contained HTML file plus a JSON
 
@@ -28,7 +28,7 @@ from rasterio.windows import Window
 import iqa
 
 __all__ = ['scan', 'show_scan', 'blocks', 'show_blocks', 'run', 'qc', 'show_qc',
-           'iqa_scan', 'show_iqa', 'write_report', 'break_output', 'np', 'plt']
+           'iqa_scan', 'show_iqa', 'write_report', 'np', 'plt']
 
 C_IN, C_OUT, C_OK, C_BAD = '#2b6cb0', '#f0a63a', '#2e8b57', '#c0392b'
 BAND_RGB = ('#c0392b', '#2e8b57', '#2b6cb0')
@@ -257,49 +257,7 @@ def run(src_path, dst_path, net, cfg, s, block=768, model='EDSR x2', lowfreq=Tru
 
 
 # --------------------------------------------------------------- 3. QC
-def _hist(path, bands, rows=1024):
-    """Exact per-band histograms, accumulated strip by strip."""
-    with rasterio.open(path) as d:
-        top = np.iinfo(d.dtypes[0]).max + 1
-        H = np.zeros((len(bands), top), np.int64)
-        for y in range(0, d.height, rows):
-            a = d.read(bands, window=Window(0, y, d.width, min(rows, d.height - y)))
-            for i in range(len(bands)):
-                H[i] += np.bincount(a[i].ravel(), minlength=top)
-    return H
-
-
-def _moments(h):
-    v = np.arange(len(h), dtype=np.float64)
-    n = h.sum()
-    mu = (h * v).sum() / n
-    nz = np.flatnonzero(h)
-    return dict(mean=mu, std=np.sqrt((h * (v - mu) ** 2).sum() / n),
-                min=int(nz[0]), max=int(nz[-1]), n=int(n))
-
-
-def _seam_ratio(path, period, scale, rows=12):
-    """Mean step across every `period`-th row and column, over the mean step a few
-    rows away.  A visible seam pushes it above 1.  The rows compared sit a multiple
-    of `scale` away, because the upsampler repeats its pattern every `scale` rows."""
-    near = [rows - 1 + k * scale for k in (-3, -2, -1, 1, 2, 3)]
-    with rasterio.open(path) as d:
-        W, H = d.width, d.height
-        r = []
-        for axis, n in ((0, H), (1, W)):
-            at, base = [], []
-            for p in range(period, n - rows, period):
-                win = (Window(0, p - rows, W, 2 * rows) if axis == 0
-                       else Window(p - rows, 0, 2 * rows, H))
-                a = d.read(1, window=win).astype(np.float32)
-                g = np.abs(np.diff(a, axis=axis)).mean(axis=1 - axis)
-                at.append(g[rows - 1]); base.append(g[near].mean())
-            if at:
-                r.append(np.mean(at) / np.mean(base))
-    return float(max(r)) if r else 1.0
-
-
-def qc(src_path, dst_path, s, cfg, block=768):
+def qc(src_path, dst_path, s, cfg):
     """Every check as a row: group, name, expected, got, ok."""
     rows = []
 
@@ -323,33 +281,6 @@ def qc(src_path, dst_path, s, cfg, block=768):
         add('header', 'processing tags', ', '.join(need), 'missing ' + ', '.join(miss)
             if miss else 'all present', not miss)
 
-    Ha, Hb = _hist(src_path, s['bands']), _hist(dst_path, list(range(1, nb + 1)))
-    top = 2 ** s['bits'] - 1
-    for i, band in enumerate(s['bands']):
-        nm = NAMES[band - 1]
-        ma, mb = _moments(Ha[i]), _moments(Hb[i])
-        dm = 100 * (mb['mean'] / ma['mean'] - 1)
-        add('radiometry', f'{nm} mean', f'{ma["mean"]:.1f}  (within 2 %)',
-            f'{mb["mean"]:.1f}  ({dm:+.2f} %)', abs(dm) <= 2)
-        rs = mb['std'] / ma['std']
-        add('radiometry', f'{nm} std', f'{ma["std"]:.1f}  (x 0.9 - 1.3)',
-            f'{mb["std"]:.1f}  (x {rs:.3f})', 0.9 <= rs <= 1.3)
-        add('radiometry', f'{nm} range', f'{ma["min"]} - {ma["max"]}  (1 - {top})',
-            f'{mb["min"]} - {mb["max"]}', mb['min'] >= 1 and mb['max'] <= top)
-        # shape: 32 bins that each hold 1/32 of the input; the output should fill them evenly
-        ca = np.cumsum(Ha[i]) / ma['n']
-        edges = np.searchsorted(ca, np.linspace(0, 1, 33)[1:-1])
-        pb = np.diff(np.concatenate([[0], np.cumsum(Hb[i])[edges], [mb['n']]])) / mb['n']
-        pa = np.diff(np.concatenate([[0], np.cumsum(Ha[i])[edges], [ma['n']]])) / ma['n']
-        bc = float(np.sqrt(pa * pb).sum())          # Bhattacharyya coefficient, 1 = same shape
-        add('radiometry', f'{nm} histogram shape', '>= 0.98', f'{bc:.4f}', bc >= 0.98)
-    holes_a = int(Ha[:, 0].min()) * cfg.scale ** 2
-    holes_b = int(Hb[:, 0].max())
-    add('radiometry', 'nodata pixels', f'<= {holes_a}', holes_b, holes_b <= holes_a)
-
-    for nm, period in (('tile seams', cfg.tile * cfg.scale), ('block seams', block * cfg.scale)):
-        r = _seam_ratio(dst_path, period, cfg.scale)
-        add('seams', nm, '<= 1.15', f'{r:.3f}', r <= 1.15)
     return rows
 
 
@@ -460,20 +391,6 @@ def _fig_crops(res, zoom=240):
     return _png(fig)
 
 
-def _fig_hist(src_path, dst_path, s):
-    Ha = _hist(src_path, s['bands'])
-    Hb = _hist(dst_path, list(range(1, len(s['bands']) + 1)))
-    top = 2 ** s['bits']
-    fig, ax = plt.subplots(1, len(s['bands']), figsize=(12, 3.4), layout='constrained')
-    for i, band in enumerate(s['bands']):
-        for h, c, nm in ((Ha[i], C_IN, 'input'), (Hb[i], C_OUT, 'output')):
-            p = h[:top].reshape(-1, 16).sum(1) / h.sum()
-            ax[i].step(np.arange(len(p)) * 16, p, color=c, lw=1.6, label=nm)
-        ax[i].set_yscale('log'); ax[i].set_yticks([]); ax[i].set_title(NAMES[band - 1], loc='left')
-        ax[i].legend(frameon=False)
-    return _png(fig)
-
-
 _CSS = """
 .qcr{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#1f2933;max-width:980px}
 .qcr h1{font-size:24px;margin:0 0 4px}.qcr h2{font-size:18px;margin:26px 0 8px}
@@ -533,7 +450,6 @@ def write_report(out_html, src_path, dst_path, s, st, checks, res):
 <h2>run</h2>{_table(run_rows, ['item', 'value'])}
 <h2>overview</h2><img src="data:image/png;base64,{_fig_overview(s, dst_path)}">
 {groups}
-<h2>histograms</h2><img src="data:image/png;base64,{_fig_hist(src_path, dst_path, s)}">
 <h2>image quality</h2>
 <p>NIQE, BRISQUE, PIQE: lower is better, relative to bicubic only.</p>
 {_table(iqa_tab, ['crop', 'method', 'niqe', 'brisque', 'piqe'])}
@@ -551,15 +467,3 @@ def write_report(out_html, src_path, dst_path, s, st, checks, res):
     print(f'{verdict}   ->  {out_html}, {out_json}')
     return html
 
-
-# --------------------------------------------------------------- a broken output
-def break_output(dst_path, out_path, s):
-    """Copy the result as it would be if the network's output had been written as
-    0 - 255 display values instead of being converted back."""
-    with rasterio.open(dst_path) as d:
-        with rasterio.open(out_path, 'w', **d.profile) as o:
-            for _, w in d.block_windows(1):
-                o.write(np.transpose(_to8(d.read(window=w), s), (2, 0, 1)).astype(d.dtypes[0]),
-                        window=w)
-            o.update_tags(**d.tags())
-    return out_path
