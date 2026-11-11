@@ -1,6 +1,6 @@
 """One scene, end to end: prepare, infer in tiles, write in windows, check, score, report.
 
-    scan          header + the 8-bit conversion, matched to a reference histogram
+    scan          header + the conversion window, from a decimated read
     run           read a block, convert, infer in tiles, convert back, write that block
     qc            header, radiometry and seam checks, each one pass / CHECK
     iqa_scan      no-reference scores and re-downscale consistency on a few crops
@@ -36,13 +36,10 @@ NAMES = ('red', 'green', 'blue', 'nir')
 
 
 # --------------------------------------------------------------- 1. prepare
-def scan(path, reference, bands=(1, 2, 3), size=1024):
-    """Header plus the conversion to 8 bits.  Each band is histogram-matched to
-    `reference` (quantiles of the model's 8-bit training inputs): a value at the p-th
-    percentile of the scene becomes the p-th percentile of the reference.  The scene
-    quantiles come from a read decimated to about `size` px a side."""
-    r = np.load(reference)
-    q, ref = r['q'], r['ref']
+def scan(path, bands=(1, 2, 3), lo=2.0, hi=99.5, size=1024):
+    """Header plus the conversion window: per band, the lo - hi percentile range is
+    stretched linearly onto 0 - 1.  The percentiles come from a read decimated to about
+    `size` px a side."""
     with rasterio.open(path) as d:
         k = max(1, -(-max(d.width, d.height) // size))
         ov = d.read(out_shape=(d.count, d.height // k, d.width // k),
@@ -50,35 +47,35 @@ def scan(path, reference, bands=(1, 2, 3), size=1024):
         m = dict(path=path, width=d.width, height=d.height, count=d.count,
                  dtype=d.dtypes[0], nodata=d.nodata)
     empty = (ov == 0).all(0)
-    bits = int(np.ceil(np.log2(ov.max() + 1)))
-    grid = np.arange(2 ** bits, dtype=np.float32)
-    fwd, back, src_q = [], [], []
-    for i, b in enumerate(bands):
-        sq = np.percentile(ov[b - 1][~empty], q).astype(np.float64)
-        sq += np.arange(len(sq)) * 1e-6               # strictly increasing for interp
-        f = np.interp(grid, sq, ref[i]).round().clip(0, 255).astype(np.uint8)
-        # back: each 8-bit level goes to the middle of the scene values that map to it
-        lv = ref[i].round()
-        bk = np.array([sq[lv == u].mean() if (lv == u).any() else np.nan
-                       for u in range(256)])
-        ok = ~np.isnan(bk)
-        bk = np.interp(np.arange(256), np.flatnonzero(ok), bk[ok])
-        fwd.append(f); back.append(bk); src_q.append(sq)
-    m.update(bands=tuple(bands), decimation=k, bits=bits, overview=ov,
-             fwd=np.stack(fwd), back=np.stack(back), q=q, ref=ref, src_q=np.stack(src_q))
+    v = ov[[b - 1 for b in bands]][:, ~empty].astype(np.float32)
+    m.update(bands=tuple(bands), decimation=k, overview=ov, pct=(lo, hi),
+             bits=int(np.ceil(np.log2(ov.max() + 1))),
+             lo=np.percentile(v, lo, axis=1).round(1).tolist(),
+             hi=np.percentile(v, hi, axis=1).round(1).tolist())
     return m
 
 
+def _lohi(s):
+    return (np.array(s[k], np.float32)[:, None, None] for k in ('lo', 'hi'))
+
+
+def _unit(a, s):
+    """(band, h, w) raw -> (h, w, 3) float32 in 0 - 1, through the window."""
+    lo, hi = _lohi(s)
+    return np.transpose(np.clip((a.astype(np.float32) - lo) / (hi - lo), 0, 1), (1, 2, 0))
+
+
 def _to8(a, s):
-    """(band, h, w) raw -> (h, w, 3) uint8, through the matched lookup tables."""
-    a = np.minimum(a, s['fwd'].shape[1] - 1)
-    return np.stack([s['fwd'][i][a[i]] for i in range(len(a))], -1)
+    """(band, h, w) raw -> (h, w, 3) uint8, for display and the IQA crops."""
+    return (_unit(a, s) * 255).round().astype(np.uint8)
 
 
-def _back(x8, s, dtype):
-    """(h, w, 3) uint8 -> (band, h, w) in the original range.  Floor at 1 so a real
-    pixel never reads as nodata."""
-    x = np.stack([s['back'][i][x8[..., i]] for i in range(x8.shape[-1])])
+def _back(y, s, dtype):
+    """(h, w, 3) network output, 0 - 1 scale -> (band, h, w) in the original range.
+    Not clipped to the window: what the network puts beyond it is kept.  Floor at 1 so a
+    real pixel never reads as nodata."""
+    lo, hi = _lohi(s)
+    x = np.transpose(y, (2, 0, 1)) * (hi - lo) + lo
     return np.clip(x.round(), 1, np.iinfo(dtype).max).astype(dtype)
 
 
@@ -86,31 +83,29 @@ def _rgb(a, s):
     return _to8(a[[b - 1 for b in s['bands']]], s)
 
 
-def show_scan(s, bins=64):
-    """The scene after conversion, and its 8-bit histogram against the reference."""
+def show_scan(s, bins=200):
+    """The scene through the window, and where the window cuts each histogram."""
     ov = s['overview']
-    x8 = _rgb(ov, s)
     fig, ax = plt.subplots(1, 2, figsize=(16.5, 6.6), layout='constrained',
                            gridspec_kw=dict(width_ratios=[1, 1.35]))
-    ax[0].imshow(x8)
+    ax[0].imshow(_rgb(ov, s))
     ax[0].set_xticks([]); ax[0].set_yticks([])
-    ax[0].set_title('1.  scene, converted to 8 bits', fontsize=21, pad=12, loc='left')
+    ax[0].set_title('1.  scene, through the window', fontsize=21, pad=12, loc='left')
     ax[0].set_xlabel(f'{s["width"]} x {s["height"]} px   {s["count"]} bands   '
                      f'{s["dtype"]}', fontsize=17)
-    edges = np.linspace(0, 256, bins + 1)
+    top = 2 ** s['bits'] - 1
+    edges = np.linspace(0, top, bins)
     for i, b in enumerate(s['bands']):
-        h = np.histogram(x8[..., i], edges)[0]
-        r = np.histogram(s['ref'][i], edges)[0]
-        ax[1].step(edges[:-1], h / h.sum(), where='post', lw=2.4, color=BAND_RGB[i],
-                   label=NAMES[b - 1])
-        ax[1].step(edges[:-1], r / r.sum(), where='post', lw=1.4, color=BAND_RGB[i], ls='--')
-    ax[1].plot([], [], color='k', lw=2.4, label='scene')
-    ax[1].plot([], [], color='k', lw=1.4, ls='--', label='reference')
-    ax[1].set_yticks([]); ax[1].set_xlim(0, 255)
-    ax[1].tick_params(labelsize=14); ax[1].legend(fontsize=14, frameon=False, ncol=2)
-    ax[1].set_title('2.  8-bit histogram, matched to the reference', fontsize=21, pad=12,
-                    loc='left')
-    ax[1].set_xlabel('pixel value     0 - 255', fontsize=17)
+        v = ov[b - 1].ravel()
+        ax[1].hist(v, bins=edges, histtype='step', lw=2.2, color=BAND_RGB[i],
+                   weights=np.full(v.size, 1 / v.size), label=NAMES[b - 1])
+        for x in (s['lo'][i], s['hi'][i]):
+            ax[1].axvline(x, color=BAND_RGB[i], lw=1.2, ls='--')
+    ax[1].set_yscale('log'); ax[1].set_yticks([]); ax[1].set_xlim(0, top)
+    ax[1].tick_params(labelsize=14); ax[1].legend(fontsize=15, frameon=False)
+    ax[1].set_title(f'2.  {s["pct"][0]:g} - {s["pct"][1]:g} % window, per band',
+                    fontsize=21, pad=12, loc='left')
+    ax[1].set_xlabel(f'pixel value     0 - {top}  ({s["bits"]}-bit)', fontsize=17)
     for sp in ('top', 'right', 'left'):
         ax[1].spines[sp].set_visible(False)
     plt.show()
@@ -152,63 +147,99 @@ def _profile(src, s, cfg):
     return p
 
 
-def _sr_block(a, net, cfg, value_range):
-    """a: (h + 2m, w + 2m, 3) uint8 — one block with its margin already around it.
+def _sr_block(a, net, cfg):
+    """a: (h + 2m, w + 2m, 3) float 0 - 1 — one block with its margin already around it.
     Tiles start at the block origin, so with `block` a multiple of `tile` every tile
     boundary in the scene falls on a multiple of `tile`."""
     t, m, sc = cfg.tile, cfg.overlap, cfg.scale
     h, w = a.shape[0] - 2 * m, a.shape[1] - 2 * m
     ny, nx = -(-h // t), -(-w // t)
     a = np.pad(a, ((0, ny * t - h), (0, nx * t - w), (0, 0)), mode='reflect')
-    out = np.empty((ny * t * sc, nx * t * sc, 3), np.uint8)
+    out = np.empty((ny * t * sc, nx * t * sc, 3), np.float32)
     keep, edge = t * sc, m * sc
     pos = [(iy, ix) for iy in range(ny) for ix in range(nx)]
     for i in range(0, len(pos), cfg.batch):
         chunk = pos[i:i + cfg.batch]
         x = np.stack([a[iy * t:iy * t + t + 2 * m, ix * t:ix * t + t + 2 * m]
                       for iy, ix in chunk])
-        x = torch.from_numpy(x).permute(0, 3, 1, 2).float().to(cfg.device) * (value_range / 255)
+        x = torch.from_numpy(x).permute(0, 3, 1, 2).to(cfg.device)
         with torch.no_grad(), torch.autocast(cfg.device.split(':')[0], dtype=torch.float16,
                                              enabled=cfg.precision == 'fp16'):
             y = net(x)
-        y = (y.float() * (255 / value_range)).clamp(0, 255).round().byte()
-        y = y.permute(0, 2, 3, 1).cpu().numpy()
+        y = y.float().permute(0, 2, 3, 1).cpu().numpy()
         for (iy, ix), tile in zip(chunk, y):
             out[iy * keep:(iy + 1) * keep, ix * keep:(ix + 1) * keep] = \
                 tile[edge:edge + keep, edge:edge + keep]
     return out[:h * sc, :w * sc]
 
 
-def run(src_path, dst_path, net, cfg, s, block=768, model='HAT x3', value_range=1.0):
-    """Block by block: read with a margin, convert, infer in tiles, convert back,
-    write.  Only one block is ever in memory.
+def _window(d, bands, y, x, h, w, m):
+    """Read a window with an m-pixel margin, reflecting where the image ends."""
+    y0, x0 = max(y - m, 0), max(x - m, 0)
+    y1, x1 = min(y + h + m, d.height), min(x + w + m, d.width)
+    a = d.read(bands, window=Window(x0, y0, x1 - x0, y1 - y0))
+    return np.pad(a, ((0, 0), (m - (y - y0), y + h + m - y1), (m - (x - x0), x + w + m - x1)),
+                  mode='reflect')
 
-    value_range   what the network expects for white: 1.0 (HAT, SwinIR) or 255 (EDSR)
+
+def _lowfreq_pass(src_path, net_path, dst_path, s, sc, block, k=11):
+    """Low frequencies from the input, detail from the network.  The input is upscaled
+    (Lanczos) and blurred; the network output contributes only what a blur of the same
+    size removes.  A second windowed pass with its own margin, so block edges see
+    their neighbours."""
+    e = 8                                           # input px; covers Lanczos + blur
+    with rasterio.open(src_path) as src, rasterio.open(net_path) as net, \
+            rasterio.open(dst_path, 'w', **net.profile) as dst:
+        for y, x, h, w in blocks(s, block):
+            lr = _window(src, s['bands'], y, x, h, w, e).astype(np.float32)
+            sr = _window(net, list(range(1, net.count + 1)), y * sc, x * sc, h * sc, w * sc,
+                         e * sc).astype(np.float32)
+            H, W = sr.shape[1:]
+            out = np.empty((len(sr), h * sc, w * sc), np.float32)
+            for i in range(len(sr)):
+                up = cv2.resize(lr[i], (W, H), interpolation=cv2.INTER_LANCZOS4)
+                v = cv2.GaussianBlur(up, (k, k), 0) + sr[i] - cv2.GaussianBlur(sr[i], (k, k), 0)
+                out[i] = v[e * sc:e * sc + h * sc, e * sc:e * sc + w * sc]
+            out = np.clip(out.round(), 1, np.iinfo(net.dtypes[0]).max).astype(net.dtypes[0])
+            empty = (lr[:, e:e + h, e:e + w] == 0).all(0)
+            out[:, np.repeat(np.repeat(empty, sc, 0), sc, 1)] = 0
+            dst.write(out, window=Window(x * sc, y * sc, w * sc, h * sc))
+
+
+def run(src_path, dst_path, net, cfg, s, block=768, model='EDSR x2', lowfreq=True):
+    """Block by block: read with a margin, convert, infer in tiles, convert back,
+    write.  Only one block is ever in memory.  The network takes and returns 0 - 1.
+
+    lowfreq   keep the input's low frequencies and add only the network's detail
+              (a second windowed pass over the network output)
     """
     sc, m = cfg.scale, cfg.overlap
     bl = blocks(s, block)
     dt = np.dtype(s['dtype'])
+    net_path = dst_path + '.net.tif' if lowfreq else dst_path
     if cfg.device.startswith('cuda'):
         torch.cuda.reset_peak_memory_stats(cfg.device)
     t0, peak = time.time(), 0
     with rasterio.open(src_path) as src, \
-            rasterio.open(dst_path, 'w', **_profile(src, s, cfg)) as dst:
+            rasterio.open(net_path, 'w', **_profile(src, s, cfg)) as dst:
         for y, x, h, w in bl:
-            # read the margin where the scene has it, reflect where it does not
-            y0, x0 = max(y - m, 0), max(x - m, 0)
-            y1, x1 = min(y + h + m, s['height']), min(x + w + m, s['width'])
-            a = src.read(s['bands'], window=Window(x0, y0, x1 - x0, y1 - y0))
-            a8 = np.pad(_to8(a, s), ((m - (y - y0), y + h + m - y1),
-                                     (m - (x - x0), x + w + m - x1), (0, 0)), mode='reflect')
-            sr = _sr_block(a8, net, cfg, value_range)
+            a = _window(src, s['bands'], y, x, h, w, m)
+            a8 = _unit(a, s)
+            sr = _sr_block(a8, net, cfg)
             out = _back(sr, s, dt)
             # input nodata stays nodata
-            empty = (a == 0).all(0)[y - y0:y - y0 + h, x - x0:x - x0 + w]
+            empty = (a == 0).all(0)[m:m + h, m:m + w]
             out[:, np.repeat(np.repeat(empty, sc, 0), sc, 1)] = 0
             dst.write(out, window=Window(x * sc, y * sc, w * sc, h * sc))
             peak = max(peak, a.nbytes + a8.nbytes + sr.nbytes + out.nbytes)
+    if lowfreq:
+        _lowfreq_pass(src_path, net_path, dst_path, s, sc, block)
+        os.remove(net_path)
+    with rasterio.open(dst_path, 'r+') as dst:
         dst.update_tags(SR_MODEL=model, SR_SCALE=sc, SR_SOURCE=os.path.basename(src_path),
-                        SR_INPUT='8-bit, histogram matched to the training inputs',
+                        SR_WINDOW_LO=','.join(map(str, s['lo'])),
+                        SR_WINDOW_HI=','.join(map(str, s['hi'])),
+                        SR_LOWFREQ='input' if lowfreq else 'network',
                         SR_TILE=cfg.tile, SR_OVERLAP=cfg.overlap, SR_BLOCK=block,
                         SR_DATE=datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'))
         for i, b in enumerate(s['bands'], start=1):
@@ -287,7 +318,7 @@ def qc(src_path, dst_path, s, cfg, block=768):
         add('header', 'compression', 'any', b.compression.value if b.compression else None,
             b.compression is not None)
         tags = b.tags()
-        need = ('SR_MODEL', 'SR_SCALE', 'SR_SOURCE', 'SR_INPUT')
+        need = ('SR_MODEL', 'SR_SCALE', 'SR_SOURCE', 'SR_WINDOW_LO', 'SR_WINDOW_HI')
         miss = [k for k in need if k not in tags]
         add('header', 'processing tags', ', '.join(need), 'missing ' + ', '.join(miss)
             if miss else 'all present', not miss)
@@ -497,7 +528,7 @@ def write_report(out_html, src_path, dst_path, s, st, checks, res):
         ('input', os.path.basename(src_path)),
         ('input size', f'{s["width"]} x {s["height"]} px, {s["count"]} bands, {s["dtype"]}'),
         ('bands used', ', '.join(NAMES[b - 1] for b in s['bands'])),
-        ('conversion', '8-bit, histogram matched to the training inputs'),
+        ('conversion', f'{s["pct"][0]:g} - {s["pct"][1]:g} % linear stretch   lo {s["lo"]}   hi {s["hi"]}'),
         ('model', f'{st["model"]}   scale {st["scale"]}'),
         ('tiling', f'tile {st["tile"]}  overlap {st["overlap"]}  batch {st["batch"]}  '
                    f'{st["precision"]}  {st["device"]}'),
@@ -541,8 +572,8 @@ PSNR, SSIM: the result shrunk back to the input grid, against the input.</p>
 
 # --------------------------------------------------------------- a broken output
 def break_output(dst_path, out_path, s):
-    """Copy the result as it would be if the network's 8-bit output had been written
-    without converting back."""
+    """Copy the result as it would be if the network's output had been written as
+    0 - 255 display values instead of being converted back."""
     with rasterio.open(dst_path) as d:
         with rasterio.open(out_path, 'w', **d.profile) as o:
             for _, w in d.block_windows(1):

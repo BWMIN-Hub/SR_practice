@@ -41,6 +41,7 @@
 | `lib/sr_losses.py` | `get_loss('l1' / 'l2' / 'charbonnier')` |
 | `lib/sr_utils.py` | `pair` `load_test` `show` `zoom` `score` `compare` `bicubic` |
 | `lib/qcpipe.py` | 19 종합 실습: `scan` `run` `qc` `iqa_scan` `write_report` |
+| `lib/theos_models.py` | 19 종합 실습: THEOS-2 EDSR ×2, `load_theos_edsr()` |
 
 ## 가중치
 
