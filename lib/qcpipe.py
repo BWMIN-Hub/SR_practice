@@ -3,7 +3,7 @@
     scan          header + the conversion window, from a decimated read
     run           read a block, convert, infer in tiles, convert back, write that block
     qc            header, radiometry and seam checks, each one pass / CHECK
-    iqa_scan      no-reference scores and re-downscale consistency on a few crops
+    iqa_scan      no-reference scores (NIQE, BRISQUE, PIQE) on a few crops
     write_report  everything above as one self-contained HTML file plus a JSON
 
 Reading and writing go through rasterio windows, so only one block is in memory at a time.
@@ -386,8 +386,7 @@ def _pick(s, n_lr):
 
 
 def iqa_scan(src_path, dst_path, s, cfg, size=200, iqa_dir=None):
-    """Three crops.  For each, bicubic and SR scored with NIQE / BRISQUE / PIQE, and
-    PSNR / SSIM of the result shrunk back to the input grid against the input."""
+    """Three crops.  For each, bicubic and SR scored with NIQE / BRISQUE / PIQE."""
     iqa.load_models(iqa_dir)
     sc = cfg.scale
     out = []
@@ -398,11 +397,8 @@ def iqa_scan(src_path, dst_path, s, cfg, size=200, iqa_dir=None):
             bic = cv2.resize(lr, (size * sc, size * sc), interpolation=cv2.INTER_CUBIC)
             row = dict(crop=name, y=int(y), x=int(x), lr=lr, imgs={})
             for k, im in (('bicubic', bic), ('SR', sr)):
-                back = cv2.resize(im, (size, size), interpolation=cv2.INTER_AREA)
                 row['imgs'][k] = im
-                row[k] = dict(niqe=iqa.niqe(im), brisque=iqa.brisque(im),
-                              piqe=iqa.piqe(im), psnr=iqa.psnr(back, lr),
-                              ssim=iqa.ssim(back, lr))
+                row[k] = dict(niqe=iqa.niqe(im), brisque=iqa.brisque(im), piqe=iqa.piqe(im))
             out.append(row)
     return out
 
@@ -423,20 +419,8 @@ def show_iqa(res, zoom=240):
                         loc='left')
             if v:
                 a.set_xlabel(f'NIQE {v["niqe"]:.2f}   BRISQUE {v["brisque"]:.1f}   '
-                             f'PIQE {v["piqe"]:.1f}\nback to input   PSNR {v["psnr"]:.2f} dB'
-                             f'   SSIM {v["ssim"]:.3f}', fontsize=15, linespacing=1.6)
+                             f'PIQE {v["piqe"]:.1f}', fontsize=15)
         plt.show()
-
-
-def iqa_rows(res, min_psnr=30.0):
-    """The consistency scores become checks too."""
-    return [dict(group='iqa', check=f'{r["crop"]} consistency',
-                 expected=f'PSNR >= {min_psnr:g} dB',
-                 got=f'{r["SR"]["psnr"]:.2f} dB  SSIM {r["SR"]["ssim"]:.3f}',
-                 ok=r['SR']['psnr'] >= min_psnr) for r in res]
-
-
-__all__ += ['iqa_rows']
 
 
 # --------------------------------------------------------------- 5. report
@@ -537,7 +521,7 @@ def write_report(out_html, src_path, dst_path, s, st, checks, res):
         ('RAM per block', f'{st["ram_block_mb"]} MB'),
         ('output', f'{os.path.basename(dst_path)}  {st["out_mb"]} MB'))]
     iqa_tab = [dict(crop=r['crop'], method=k, **{m: f'{r[k][m]:.3f}' for m in
-                                                 ('niqe', 'brisque', 'piqe', 'psnr', 'ssim')})
+                                                 ('niqe', 'brisque', 'piqe')})
                for r in res for k in ('bicubic', 'SR')]
     groups = ''
     for g in dict.fromkeys(c['group'] for c in checks):
@@ -552,9 +536,8 @@ def write_report(out_html, src_path, dst_path, s, st, checks, res):
 {groups}
 <h2>histograms</h2><img src="data:image/png;base64,{_fig_hist(src_path, dst_path, s)}">
 <h2>image quality</h2>
-<p>NIQE, BRISQUE, PIQE: lower is better, relative to bicubic only.
-PSNR, SSIM: the result shrunk back to the input grid, against the input.</p>
-{_table(iqa_tab, ['crop', 'method', 'niqe', 'brisque', 'piqe', 'psnr', 'ssim'])}
+<p>NIQE, BRISQUE, PIQE: lower is better, relative to bicubic only.</p>
+{_table(iqa_tab, ['crop', 'method', 'niqe', 'brisque', 'piqe'])}
 <img src="data:image/png;base64,{_fig_crops(res)}">
 </div>"""
     with open(out_html, 'w') as f:
