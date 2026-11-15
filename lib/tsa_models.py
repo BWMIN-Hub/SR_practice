@@ -1,13 +1,13 @@
-"""Temporal MISR x3 — the target LR image plus a second input: LR images of other dates.
+"""MISR x3 — an LR image plus a second input: other LR images of the same place.
 
     from tsa_models import load_misr, run_tiled
     net = load_misr('misr_x3.pt')
-    sr = run_tiled(net, target, second)   # (h, w, 3) uint8, (T, h, w, 3) uint8 -> (3h, 3w, 3) uint8
+    sr = run_tiled(net, lr, second)       # (h, w, 3) uint8, (T, h, w, 3) uint8 -> (3h, 3w, 3) uint8
 
 SwinIR layout (window attention, shifted windows every other block, residual groups).
-Every attention is target -> second input: queries come from the target window (ws x ws
+Every attention is LR -> second input: queries come from the LR window (ws x ws
 tokens), keys and values from the same window in every second-input image.  There is no
-attention among target tokens and none among second-input tokens.
+attention among LR tokens and none among second-input tokens.
 """
 import numpy as np
 import torch
@@ -31,7 +31,7 @@ def _unwin(x, ws, B, H, W):
 
 
 class CrossWindowAttention(nn.Module):
-    """Target window -> the second-input windows at the same place, all dates."""
+    """LR window -> the second-input windows at the same place, all images."""
 
     def __init__(self, dim, heads, ws):
         super().__init__()
@@ -117,7 +117,7 @@ class Group(nn.Module):
 
 
 class SecondEncoder(nn.Module):
-    """Each second-input image through the same convs; dates are not mixed."""
+    """Each second-input image through the same convs; images are not mixed."""
 
     def __init__(self, dim):
         super().__init__()
@@ -144,10 +144,10 @@ class TemporalMISR(nn.Module):
                                 nn.Conv2d(dim, 3 * scale ** 2, 3, padding=1),
                                 nn.PixelShuffle(scale))
 
-    def forward(self, target, second):
-        B, _, h, w = target.shape
+    def forward(self, lr, second):
+        B, _, h, w = lr.shape
         p = (-h) % self.ws, (-w) % self.ws
-        x, a = target, second
+        x, a = lr, second
         if any(p):
             x = F.pad(x, (0, p[1], 0, p[0]), mode='reflect')
             a = F.pad(a.flatten(0, 1), (0, p[1], 0, p[0]), mode='reflect').view(
@@ -166,7 +166,7 @@ class TemporalMISR(nn.Module):
             t = g(t, aw, T)
         t = self.norm(t).permute(0, 3, 1, 2)
         out = self.up(self.body_tail(t) + f0)[:, :, :h * self.scale, :w * self.scale]
-        return out + F.interpolate(target, scale_factor=self.scale, mode='bicubic',
+        return out + F.interpolate(lr, scale_factor=self.scale, mode='bicubic',
                                    align_corners=False)
 
 
@@ -177,12 +177,12 @@ def load_misr(weight, device=None):
     return net.to(device).eval()
 
 
-def run_tiled(net, target, second, tile=128, ov=16):
-    """target (h, w, 3) uint8, second (T, h, w, 3) uint8 -> (3h, 3w, 3) uint8.
+def run_tiled(net, lr, second, tile=128, ov=16):
+    """lr (h, w, 3) uint8, second (T, h, w, 3) uint8 -> (3h, 3w, 3) uint8.
     Tiles of `tile` px read `ov` px around themselves; the margins are dropped."""
     dev = next(net.parameters()).device
-    h, w = target.shape[:2]
-    t = torch.from_numpy(target.astype(np.float32) / 127.5 - 1).permute(2, 0, 1)
+    h, w = lr.shape[:2]
+    t = torch.from_numpy(lr.astype(np.float32) / 127.5 - 1).permute(2, 0, 1)
     x = torch.from_numpy(second.astype(np.float32) / 127.5 - 1).permute(0, 3, 1, 2)
     out = torch.zeros(3, h * 3, w * 3)
     step = tile - 2 * ov
