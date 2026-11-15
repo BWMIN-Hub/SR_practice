@@ -23,6 +23,7 @@
 | [`17_image_content`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/17_image_content.ipynb) | 영상 들여다보기 — 분포 · 밴드 구성 · 구름과 선명도 (GPU 불필요) | 불필요 |
 | [`18_preflight`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/18_preflight.ipynb) | 실행 전 점검 5가지 — GPU · 입력 변환 · 패치 · 정밀도 · 스크립트 | 필요 |
 | [`19_scene_pipeline`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/19_scene_pipeline.ipynb) | 종합 — THEOS-2 1장면: 전처리 · 타일 추론 · windowed write · QC · IQA · 리포트 | 필요 |
+| [`20_misr_vs_sisr`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/20_misr_vs_sisr.ipynb) | MISR vs SISR — 입력 장수(1~9)별 PSNR · SSIM | 필요 |
 
 번호가 곧 배우는 순서이자 모델이 나온 순서다 (SRCNN 2014 → HAT 2023).
 
@@ -42,6 +43,7 @@
 | `lib/sr_utils.py` | `pair` `load_test` `show` `zoom` `score` `compare` `bicubic` |
 | `lib/qcpipe.py` | 19 종합 실습: `scan` `run` `qc` `iqa_scan` `write_report` |
 | `lib/theos_models.py` | 19 종합 실습: THEOS-2 EDSR ×2, `load_theos_edsr()` |
+| `lib/misr_models.py` | 20 MISR vs SISR: MISR ×3 3D UNet, `load_misr()` |
 
 ## 가중치
 
