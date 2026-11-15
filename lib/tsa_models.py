@@ -1,20 +1,20 @@
-"""TSwinIR — temporal MISR x3: one target LR image plus several LR images of other dates.
+"""Temporal MISR x3 — the target LR image plus a second input: LR images of other dates.
 
-    from tsa_models import load_tswinir, run_tiled
-    net = load_tswinir('tswinir_x3.pt')
-    sr = run_tiled(net, target, aux)    # (h, w, 3) uint8, (T, h, w, 3) uint8 -> (3h, 3w, 3) uint8
+    from tsa_models import load_misr, run_tiled
+    net = load_misr('misr_x3.pt')
+    sr = run_tiled(net, target, second)   # (h, w, 3) uint8, (T, h, w, 3) uint8 -> (3h, 3w, 3) uint8
 
 SwinIR layout (window attention, shifted windows every other block, residual groups).
-Every attention is target -> aux: queries come from the target window (ws x ws tokens),
-keys and values from the same window in all T aux images (T x ws x ws tokens).
-There is no attention among target tokens and none among aux tokens.
+Every attention is target -> second input: queries come from the target window (ws x ws
+tokens), keys and values from the same window in every second-input image.  There is no
+attention among target tokens and none among second-input tokens.
 """
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-__all__ = ['TSwinIR', 'load_tswinir', 'run_tiled']
+__all__ = ['TemporalMISR', 'load_misr', 'run_tiled']
 
 
 def _win(x, ws):
@@ -31,7 +31,7 @@ def _unwin(x, ws, B, H, W):
 
 
 class CrossWindowAttention(nn.Module):
-    """Target window -> the aux windows at the same place, all T dates."""
+    """Target window -> the second-input windows at the same place, all dates."""
 
     def __init__(self, dim, heads, ws):
         super().__init__()
@@ -85,7 +85,7 @@ class Block(nn.Module):
         return m.masked_fill(m != 0, -100.0).masked_fill(m == 0, 0.0)
 
     def forward(self, t, aw, T):
-        """t: (B, H, W, C)  aw: aux window tokens (unshifted, shifted), each (B*nW, T*N, C)"""
+        """t: (B, H, W, C)  aw: second-input window tokens (unshifted, shifted), each (B*nW, T*N, C)"""
         B, H, W, C = t.shape
         x = self.nt(t)
         if self.shift:
@@ -116,8 +116,8 @@ class Group(nn.Module):
         return t + self.conv(x.permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
 
 
-class AuxEncoder(nn.Module):
-    """Each aux image through the same convs; dates are not mixed."""
+class SecondEncoder(nn.Module):
+    """Each second-input image through the same convs; dates are not mixed."""
 
     def __init__(self, dim):
         super().__init__()
@@ -130,13 +130,13 @@ class AuxEncoder(nn.Module):
         return self.c(a.reshape(B * T, C, H, W)).view(B, T, -1, H, W)
 
 
-class TSwinIR(nn.Module):
+class TemporalMISR(nn.Module):
     def __init__(self, dim=64, groups=4, depth=4, heads=4, ws=8, scale=3):
         super().__init__()
         self.ws, self.scale = ws, scale
         self.head = nn.Conv2d(3, dim, 3, padding=1)
-        self.aux = AuxEncoder(dim)
-        self.anorm = nn.LayerNorm(dim)                # aux does not change between blocks: normalise once
+        self.second = SecondEncoder(dim)
+        self.anorm = nn.LayerNorm(dim)                # the second input does not change between blocks: normalise once
         self.groups = nn.ModuleList([Group(dim, depth, heads, ws) for _ in range(groups)])
         self.norm = nn.LayerNorm(dim)
         self.body_tail = nn.Conv2d(dim, dim, 3, padding=1)
@@ -144,17 +144,17 @@ class TSwinIR(nn.Module):
                                 nn.Conv2d(dim, 3 * scale ** 2, 3, padding=1),
                                 nn.PixelShuffle(scale))
 
-    def forward(self, target, aux):
+    def forward(self, target, second):
         B, _, h, w = target.shape
         p = (-h) % self.ws, (-w) % self.ws
-        x, a = target, aux
+        x, a = target, second
         if any(p):
             x = F.pad(x, (0, p[1], 0, p[0]), mode='reflect')
             a = F.pad(a.flatten(0, 1), (0, p[1], 0, p[0]), mode='reflect').view(
-                B, aux.shape[1], 3, h + p[0], w + p[1])
+                B, second.shape[1], 3, h + p[0], w + p[1])
         f0 = self.head(x)
         t = f0.permute(0, 2, 3, 1)
-        av = self.anorm(self.aux(a).permute(0, 1, 3, 4, 2))          # (B, T, H, W, C)
+        av = self.anorm(self.second(a).permute(0, 1, 3, 4, 2))          # (B, T, H, W, C)
         T, H, W, C = av.shape[1:]
         aw = []
         for s in (0, self.ws // 2):
@@ -170,20 +170,20 @@ class TSwinIR(nn.Module):
                                    align_corners=False)
 
 
-def load_tswinir(weight, device=None):
+def load_misr(weight, device=None):
     device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
-    net = TSwinIR()
+    net = TemporalMISR()
     net.load_state_dict(torch.load(weight, map_location='cpu'))
     return net.to(device).eval()
 
 
-def run_tiled(net, target, aux, tile=128, ov=16):
-    """target (h, w, 3) uint8, aux (T, h, w, 3) uint8 -> (3h, 3w, 3) uint8.
+def run_tiled(net, target, second, tile=128, ov=16):
+    """target (h, w, 3) uint8, second (T, h, w, 3) uint8 -> (3h, 3w, 3) uint8.
     Tiles of `tile` px read `ov` px around themselves; the margins are dropped."""
     dev = next(net.parameters()).device
     h, w = target.shape[:2]
     t = torch.from_numpy(target.astype(np.float32) / 127.5 - 1).permute(2, 0, 1)
-    x = torch.from_numpy(aux.astype(np.float32) / 127.5 - 1).permute(0, 3, 1, 2)
+    x = torch.from_numpy(second.astype(np.float32) / 127.5 - 1).permute(0, 3, 1, 2)
     out = torch.zeros(3, h * 3, w * 3)
     step = tile - 2 * ov
     for y0 in range(0, h, step):

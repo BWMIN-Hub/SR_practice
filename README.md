@@ -24,7 +24,7 @@
 | [`18_preflight`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/18_preflight.ipynb) | 실행 전 점검 5가지 — GPU · 입력 변환 · 패치 · 정밀도 · 스크립트 | 필요 |
 | [`19_scene_pipeline`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/19_scene_pipeline.ipynb) | 종합 — THEOS-2 1장면: 전처리 · 타일 추론 · windowed write · QC · IQA · 리포트 | 필요 |
 | [`20_misr_vs_sisr`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/20_misr_vs_sisr.ipynb) | MISR vs SISR — 입력 장수(1~9)별 PSNR · SSIM | 필요 |
-| [`21_temporal_misr`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/21_temporal_misr.ipynb) | 시계열 MISR — target 1장 + 다른 시기 Sentinel-2 9장, target→aux attention (TSwinIR), aux 장수별 PSNR·SSIM, EDSR·HAT 비교 | 필요 |
+| [`21_temporal_misr`](https://colab.research.google.com/github/BWMIN-Hub/SR_practice/blob/main/notebooks/21_temporal_misr.ipynb) | 시계열 MISR — target + 다른 시기 Sentinel-2(두 번째 입력), target→두 번째 입력 attention, 입력 장수별 PSNR·SSIM, EDSR·HAT 비교 | 필요 |
 
 번호가 곧 배우는 순서이자 모델이 나온 순서다 (SRCNN 2014 → HAT 2023).
 
@@ -45,7 +45,7 @@
 | `lib/qcpipe.py` | 19 종합 실습: `scan` `run` `qc` `iqa_scan` `write_report` |
 | `lib/theos_models.py` | 19 종합 실습: THEOS-2 EDSR ×2, `load_theos_edsr()` |
 | `lib/misr_models.py` | 20 MISR vs SISR: MISR ×3 3D UNet, `load_misr()` |
-| `lib/tsa_models.py` | 21 시계열 MISR: TSwinIR ×3, `load_tswinir()` `run_tiled()` |
+| `lib/tsa_models.py` | 21 시계열 MISR ×3: `load_misr()` `run_tiled()` |
 
 ## 가중치
 
