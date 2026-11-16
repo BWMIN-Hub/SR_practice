@@ -34,12 +34,13 @@ REPS = {
 }
 # 확대해서 볼 자리. 패치마다 구조가 제일 빽빽한 곳을 미리 잡아 뒀다.
 VIS_CENTER = [(302, 62), (107, 307), (322, 322), (192, 192), (144, 144)]
+NSHOW = 2                                # 실습 페이지에 보여줄 검증 패치 수 (앞에서부터)
 VIS_SIZE = 160          # 확대 창의 한 변 (결과 크기 기준). zoom 그림과 같은 크기다.
 TEST = 'incheon_600.png'                          # a real capture, no IKONOS image
 TESTS = ['incheon_600.png', 'incheon2_600.png']   # 같은 씬의 다른 두 구역
 SHAVE = 4                                         # 점수 잴 때 잘라낼 가장자리
 
-__all__ = ['BASE', 'REP', 'REPS', 'VIS', 'VIS_CENTER', 'VIS_SIZE', 'TEST', 'TESTS',
+__all__ = ['BASE', 'REP', 'REPS', 'VIS', 'VIS_CENTER', 'VIS_SIZE', 'NSHOW', 'TEST', 'TESTS',
            'SHAVE', 'fetch', 'pair', 'load_test', 'list_split', 'show', 'zoom',
            'score', 'titled', 'compare', 'bicubic', 'nearest', 'retarget',
            'show_data', 'show_results', 'show_test',
@@ -236,7 +237,7 @@ def compare(upscale_fn, split='validation', plot=True, label='model', scale=3):
 def show_data():
     """1. 데이터 — 실제 Sentinel-2 패치 + test 2구역을 한눈에."""
     panels = [(f'validation {i+1}', *pair(VIS, s))
-              for i, s in enumerate(REPS[VIS])]
+              for i, s in enumerate(REPS[VIS][:NSHOW])]
     panels += [(f'test {i+1}', load_test(i), None) for i in range(len(TESTS))]
     show(panels)
 
@@ -254,7 +255,7 @@ def show_results(upscale_fn, label='model', scale=3, center=None, size=None):
     center=(x, y) 로 확대 위치를 지정한다. 안 주면 오른쪽 아래.
     패치마다 다르게 하려면 center=[(x1, y1), (x2, y2)].
     """
-    for i, stem in enumerate(REPS[VIS]):
+    for i, stem in enumerate(REPS[VIS][:NSHOW]):
         lr, hr = pair(VIS, stem)
         hr = retarget(hr, lr, scale)
         c = _per_patch(center if center is not None else VIS_CENTER, i)
