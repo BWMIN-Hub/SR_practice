@@ -100,7 +100,7 @@
   "has_hr": true
  },
  "test1": {
-  "title": "test 1 \u2014 no IKONOS image",
+  "title": "test 1 \u2014 no HR reference",
   "full": [
    1800,
    1800
@@ -120,7 +120,7 @@
   "has_hr": false
  },
  "test2": {
-  "title": "test 2 \u2014 no IKONOS image",
+  "title": "test 2 \u2014 no HR reference",
   "full": [
    1800,
    1800
@@ -140,7 +140,7 @@
   "has_hr": false
  },
  "down4": {
-  "title": "validation 4 \u2014 input made from IKONOS",
+  "title": "validation 4 \u2014 input made from HR reference",
   "full": [
    384,
    384
